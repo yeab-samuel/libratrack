@@ -1,0 +1,23 @@
+﻿# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Environment secrets
+.env
+
+# Frontend dependencies and build
+libratrack-ui/node_modules/
+libratrack-ui/dist/
+libratrack-ui/.vite/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: libratrack-db
+    environment:
+      POSTGRES_DB: libratrack
+      POSTGRES_USER: ${POSTGRES_USER:-libratrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER:-libratrack}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [libra-net]
+  app:
+    build: .
+    container_name: libratrack-app
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/libratrack
+      DB_USER: ${POSTGRES_USER:-libratrack}
+      DB_PASS: ${POSTGRES_PASSWORD:-changeme}
+      JWT_SECRET: ${JWT_SECRET}
+      DAILY_FINE_RATE: ${DAILY_FINE_RATE:-0.50}
+      MAX_LOANS_STUDENT: ${MAX_LOANS_STUDENT:-3}
+      MAX_LOANS_FACULTY: ${MAX_LOANS_FACULTY:-5}
+    ports: ["8080:8080"]
+    networks: [libra-net]
+volumes:
+  postgres_data:
+networks:
+  libra-net:
