@@ -24,7 +24,7 @@ public class User implements UserDetails {
     @Column(name="password_hash",nullable=false) @JsonIgnore private String passwordHash;
     @Enumerated(EnumType.STRING) @Column(nullable=false) private Role role;
     @Column(name="full_name",nullable=false,length=200) @NotBlank private String fullName;
-    @Column(name="student_id",unique=true) private String studentId;
+    @Column(name="university_id",length = 50) private String universityId;
     @Column(nullable=false) @Builder.Default private Boolean active=true;
     @CreationTimestamp @Column(name="created_at",nullable=false,updatable=false) private LocalDateTime createdAt;
     @OneToMany(mappedBy="member",fetch=FetchType.LAZY) @JsonIgnore private List<Loan> loans=new ArrayList<>();
