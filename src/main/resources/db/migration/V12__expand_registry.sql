@@ -1,0 +1,25 @@
+-- More students with varied departments and enrollment years
+INSERT INTO university_registry (university_id, full_name, role, department) VALUES
+('ATE/8809/14', 'Zayn Solomon',       'STUDENT', 'Software Engineering'),
+('ATE/9101/15', 'Meron Tadesse',       'STUDENT', 'Software Engineering'),
+('ATE/7823/16', 'Biruk Alemu',         'STUDENT', 'Software Engineering'),
+('CSE/2201/17', 'Hana Girma',          'STUDENT', 'Computer Science'),
+('CSE/3302/18', 'Yonas Bekele',        'STUDENT', 'Computer Science'),
+('CSE/4401/19', 'Lidya Haile',         'STUDENT', 'Computer Science'),
+('CSE/5502/20', 'Abel Tesfaye',        'STUDENT', 'Computer Science'),
+('CSE/6603/21', 'Ruth Kebede',         'STUDENT', 'Computer Science'),
+('ENG/1122/22', 'Mikael Demissie',     'STUDENT', 'Engineering'),
+('ENG/2233/23', 'Selam Worku',         'STUDENT', 'Engineering'),
+('ENG/3344/24', 'Daniel Assefa',       'STUDENT', 'Engineering'),
+('ENG/4455/25', 'Sara Hailu',          'STUDENT', 'Engineering'),
+('MED/1010/20', 'Kaleb Tesfaye',       'STUDENT', 'Medicine'),
+('MED/2020/21', 'Bethel Girma',        'STUDENT', 'Medicine'),
+('LAW/1111/22', 'Natnael Alemu',       'STUDENT', 'Law'),
+('LAW/2222/23', 'Tigist Bekele',       'STUDENT', 'Law'),
+('HUM/1234/24', 'Eyob Tadesse',        'STUDENT', 'Humanities'),
+('HUM/5678/25', 'Miriam Haile',        'STUDENT', 'Humanities'),
+('FAC/0606/03', 'Dr. Kebede Alemu',    'FACULTY', 'Software Engineering'),
+('FAC/0707/07', 'Prof. Almaz Girma',   'FACULTY', 'Computer Science'),
+('FAC/0808/09', 'Dr. Yonas Bekele',    'FACULTY', 'Law'),
+('FAC/0909/11', 'Prof. Selamawit T.',  'FACULTY', 'Medicine')
+ON CONFLICT (university_id) DO NOTHING;
