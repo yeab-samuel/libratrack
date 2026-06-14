@@ -5,8 +5,10 @@ import com.libratrack.entity.Book;
 import com.libratrack.enums.BookCategory;
 import com.libratrack.exception.DuplicateResourceException;
 import com.libratrack.exception.ResourceNotFoundException;
+import com.libratrack.repository.BookRatingRepository;
 import com.libratrack.repository.BookRepository;
 import com.libratrack.specification.BookSpecification;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -25,7 +27,13 @@ import static org.mockito.Mockito.*;
 class BookServiceTest {
 
     @Mock BookRepository bookRepository;
+    @Mock BookRatingRepository bookRatingRepository;
     @InjectMocks BookService bookService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(bookRatingRepository.findStatsByBookIds(any())).thenReturn(List.of());
+    }
 
     // ── createBook ────────────────────────────────────────────────────────────
 
