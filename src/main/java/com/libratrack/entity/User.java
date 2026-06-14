@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 @Entity
 @Table(name="users",
-  uniqueConstraints={@UniqueConstraint(name="uq_users_email",columnNames="email"),
-                     @UniqueConstraint(name="uq_users_student_id",columnNames="student_id")},
-  indexes={@Index(name="idx_users_email",columnList="email"),
-           @Index(name="idx_users_role",columnList="role")})
+        uniqueConstraints={@UniqueConstraint(name="uq_users_email",columnNames="email"),
+                @UniqueConstraint(name="uq_users_university_id",columnNames="university_id")},
+        indexes={@Index(name="idx_users_email",columnList="email"),
+                @Index(name="idx_users_role",columnList="role")})
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(of="id") @ToString(exclude={"loans","reservations","fines"})
 public class User implements UserDetails {
