@@ -30,6 +30,8 @@ class ReservationServiceTest {
     @Mock BookRepository bookRepository;
     @Mock BookCopyRepository copyRepository;
     @Mock UserRepository userRepository;
+    @Mock NotificationService notificationService;
+
 
     @InjectMocks ReservationService reservationService;
 
