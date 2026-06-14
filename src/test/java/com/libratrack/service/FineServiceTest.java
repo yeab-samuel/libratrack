@@ -43,7 +43,12 @@ class FineServiceTest {
         admin = User.builder().id(3L).email("admin@test.com")
                 .role(Role.ADMIN).fullName("Admin").active(true).build();
 
-        loan = Loan.builder().id(1L).member(student)
+        Book book = Book.builder().id(1L).isbn("978-0000000001").title("Test Book")
+                .author("Test Author").category(BookCategory.SCIENCE)
+                .totalCopies(1).createdAt(LocalDateTime.now()).build();
+        BookCopy copy = BookCopy.builder().id(1L).book(book).copyNumber("C-001")
+                .condition(CopyCondition.GOOD).status(CopyStatus.ON_LOAN).build();
+        loan = Loan.builder().id(1L).member(student).bookCopy(copy)
                 .dueDate(LocalDate.now().minusDays(5)).build();
         fine = FineRecord.builder().id(1L).loan(loan).member(student)
                 .amount(new BigDecimal("2.50")).status(FineStatus.UNPAID).build();
