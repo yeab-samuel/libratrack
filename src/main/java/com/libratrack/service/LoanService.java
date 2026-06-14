@@ -251,11 +251,12 @@ public class LoanService {
 
     public LoanDTO toDTO(Loan l) {
         return new LoanDTO(
-            l.getId(), l.getMember().getId(), l.getMember().getFullName(),
-            l.getBookCopy().getId(), l.getBookCopy().getCopyNumber(),
-            l.getBookCopy().getBook().getTitle(),
-            l.getIssuedAt(), l.getDueDate(), l.getReturnedAt(), l.getStatus(),
-            l.getProcessedBy() != null ? l.getProcessedBy().getId() : null
+                l.getId(), l.getMember().getId(), l.getMember().getFullName(),
+                l.getBookCopy().getBook().getId(),
+                l.getBookCopy().getId(), l.getBookCopy().getCopyNumber(),
+                l.getBookCopy().getBook().getTitle(),
+                l.getIssuedAt(), l.getDueDate(), l.getReturnedAt(), l.getStatus(),
+                l.getProcessedBy() != null ? l.getProcessedBy().getId() : null
         );
     }
 }

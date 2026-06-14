@@ -25,5 +25,4 @@ public class BookService {
         return toDTO(bookRepository.save(b));
     }
     @Transactional public void deleteBook(Long id){if(!bookRepository.existsById(id))throw new ResourceNotFoundException("Book not found: "+id);bookRepository.deleteById(id);}
-    public BookDTO toDTO(Book b){return new BookDTO(b.getId(),b.getIsbn(),b.getTitle(),b.getAuthor(),b.getCategory(),b.getPublisher(),b.getPublishedYear(),b.getTotalCopies(),b.getDescription(),b.getCreatedAt());}
-}
+    public BookDTO toDTO(Book b){return new BookDTO(b.getId(),b.getIsbn(),b.getTitle(),b.getAuthor(),b.getCategory(),b.getPublisher(),b.getPublishedYear(),b.getTotalCopies(),b.getDescription(),b.getCreatedAt(),null,0L);}}
