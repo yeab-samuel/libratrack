@@ -144,7 +144,7 @@ class AuthControllerTest {
     void login_ValidCredentials_Returns200WithToken() throws Exception {
         String token = "jwt-token-here";
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
-        TokenResponse tokenResponse = new TokenResponse(token, expiresAt, "John Doe");
+        TokenResponse tokenResponse = new TokenResponse(token, expiresAt, "John Doe", Role.STUDENT, "ATE/9305/14");
         when(authService.login(any())).thenReturn(tokenResponse);
 
         LoginRequest req = new LoginRequest("john@test.com", "password123");
