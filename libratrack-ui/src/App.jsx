@@ -884,7 +884,7 @@ function ReservationsPage({ auth }) {
 function FinesPage({ auth }) {
   const { token, role } = auth;
   const isMember = ["STUDENT","FACULTY"].includes(role);
-  const canPay   = ["LIBRARIAN","ADMIN"].includes(role);
+  const canPay   = role === "LIBRARIAN";
   const canWaive = role === "ADMIN";
   const endpoint = isMember ? "/api/fines/mine" : "/api/fines";
   const [rows, setRows]         = useState([]);
