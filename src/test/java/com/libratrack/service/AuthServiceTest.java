@@ -83,8 +83,15 @@ class AuthServiceTest {
     @Test
     void login_WrongPassword_ThrowsBadCredentials() {
         var req = new LoginRequest("john@test.com", "wrongpassword");
+        User user = User.builder().id(1L).email("john@test.com").role(Role.STUDENT)
+                .fullName("John").active(true).passwordHash("hashed").build();
+
+        // identifier resolves to a real user via the email fallback, so the
+        // code proceeds to authManager.authenticate(), which is what throws here.
+        when(userRepository.findByEmail("john@test.com")).thenReturn(Optional.of(user));
         doThrow(new BadCredentialsException("Bad credentials"))
                 .when(authManager).authenticate(any());
+
         assertThrows(BadCredentialsException.class, () -> authService.login(req));
     }
 
