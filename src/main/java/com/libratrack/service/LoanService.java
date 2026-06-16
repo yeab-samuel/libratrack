@@ -25,9 +25,12 @@ public class LoanService {
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
 
-    @Value("${app.daily-fine-rate:0.50}") private BigDecimal dailyFineRate;
-    @Value("${app.max-loans-student:3}")  private int maxLoansStudent;
-    @Value("${app.max-loans-faculty:5}")  private int maxLoansFaculty;
+    @Value("${app.daily-fine-rate:0.50}")
+    private BigDecimal dailyFineRate;
+    @Value("${app.max-loans-student:3}")
+    private int maxLoansStudent;
+    @Value("${app.max-loans-faculty:5}")
+    private int maxLoansFaculty;
 
     // ── STUDENT / FACULTY self-service borrow ─────────────────────────────────
 
@@ -58,11 +61,17 @@ public class LoanService {
         reservationRepository
                 .findFirstByBookAndStatusOrderByQueuePositionAsc(copy.getBook(), ReservationStatus.NOTIFIED)
                 .filter(r -> r.getMember().getId().equals(member.getId()))
-                .ifPresent(r -> { r.setStatus(ReservationStatus.FULFILLED); reservationRepository.save(r); });
+                .ifPresent(r -> {
+                    r.setStatus(ReservationStatus.FULFILLED);
+                    reservationRepository.save(r);
+                });
         reservationRepository
                 .findFirstByBookAndStatusOrderByQueuePositionAsc(copy.getBook(), ReservationStatus.WAITING)
                 .filter(r -> r.getMember().getId().equals(member.getId()))
-                .ifPresent(r -> { r.setStatus(ReservationStatus.FULFILLED); reservationRepository.save(r); });
+                .ifPresent(r -> {
+                    r.setStatus(ReservationStatus.FULFILLED);
+                    reservationRepository.save(r);
+                });
 
         log.info("Self-borrow: user={} copy={} due={}", memberEmail, copy.getCopyNumber(), req.dueDate());
         return toDTO(loan);
@@ -103,7 +112,10 @@ public class LoanService {
         reservationRepository
                 .findFirstByBookAndStatusOrderByQueuePositionAsc(copy.getBook(), ReservationStatus.NOTIFIED)
                 .filter(r -> r.getMember().getId().equals(member.getId()))
-                .ifPresent(r -> { r.setStatus(ReservationStatus.FULFILLED); reservationRepository.save(r); });
+                .ifPresent(r -> {
+                    r.setStatus(ReservationStatus.FULFILLED);
+                    reservationRepository.save(r);
+                });
 
         log.info("Counter loan: staff={} member={} copy={}", staffEmail, member.getEmail(), copy.getCopyNumber());
         return toDTO(loan);
@@ -130,7 +142,10 @@ public class LoanService {
             long days = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
             BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(days));
             fineRepository.findByLoan(loan).ifPresentOrElse(
-                    f -> { f.setAmount(amount); fineRepository.save(f); },
+                    f -> {
+                        f.setAmount(amount);
+                        fineRepository.save(f);
+                    },
                     () -> fineRepository.save(FineRecord.builder()
                             .loan(loan).member(loan.getMember()).amount(amount).build())
             );
@@ -153,7 +168,9 @@ public class LoanService {
         return loanRepository.findWithFilters(memberId, status, pageable).map(this::toDTO);
     }
 
-    /** STUDENT / FACULTY — view their own loans, optionally filtered by status. */
+    /**
+     * STUDENT / FACULTY — view their own loans, optionally filtered by status.
+     */
     @Transactional(readOnly = true)
     public Page<LoanDTO> getMyLoans(String email, LoanStatus status, Pageable pageable) {
         User m = userRepository.findByEmail(email)
@@ -213,9 +230,9 @@ public class LoanService {
         if (fineRepository.existsByMemberAndStatus(member, FineStatus.UNPAID))
             throw new UnpaidFineException("Member has unpaid fines. Please settle before borrowing.");
 
-        long active  = loanRepository.countByMemberAndStatus(member, LoanStatus.ACTIVE);
+        long active = loanRepository.countByMemberAndStatus(member, LoanStatus.ACTIVE);
         long overdue = loanRepository.countByMemberAndStatus(member, LoanStatus.OVERDUE);
-        int  limit   = (member.getRole() == Role.FACULTY) ? maxLoansFaculty : maxLoansStudent;
+        int limit = (member.getRole() == Role.FACULTY) ? maxLoansFaculty : maxLoansStudent;
         if (active + overdue >= limit)
             throw new BorrowLimitExceededException(
                     "Borrow limit of " + limit + " reached. Return a book first.");
@@ -224,6 +241,7 @@ public class LoanService {
     public LoanDTO toDTO(Loan l) {
         return new LoanDTO(
                 l.getId(), l.getMember().getId(), l.getMember().getFullName(),
+                l.getMember().getUniversityId(),
                 l.getBookCopy().getBook().getId(),
                 l.getBookCopy().getId(), l.getBookCopy().getCopyNumber(),
                 l.getBookCopy().getBook().getTitle(),
