@@ -44,7 +44,7 @@ class LoanControllerTest extends BaseControllerTest {
     @Test
     @WithMockUser(roles = "STUDENT")
     void getMyLoans_AsStudent_Returns200() throws Exception {
-        when(loanService.getMyLoans(any(), any())).thenReturn(Page.empty());
+        when(loanService.getMyLoans(any(), any(), any())).thenReturn(Page.empty());
         mockMvc.perform(get("/api/loans/mine"))
             .andExpect(status().isOk());
     }
