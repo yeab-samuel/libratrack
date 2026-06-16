@@ -55,8 +55,10 @@ public class LoanController {
     @GetMapping("/mine")
     @PreAuthorize("hasAnyRole('STUDENT','FACULTY')")
     public ResponseEntity<Page<LoanDTO>> getMyLoans(
-            Authentication auth, @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(loanService.getMyLoans(auth.getName(), pageable));
+            Authentication auth,
+            @RequestParam(required = false) LoanStatus status,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(loanService.getMyLoans(auth.getName(), status, pageable));
     }
 
     /** Any authenticated user — view a specific loan (access-checked in service) */
