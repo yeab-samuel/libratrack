@@ -1,0 +1,183 @@
+package com.libratrack.scheduler;
+
+import com.libratrack.entity.*;
+import com.libratrack.enums.*;
+import com.libratrack.repository.*;
+import com.libratrack.service.NotificationService;
+import com.libratrack.service.ReservationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class OverdueFineSchedulerTest {
+
+    @Mock LoanRepository loanRepository;
+    @Mock FineRecordRepository fineRepository;
+    @Mock TokenBlacklistRepository tokenBlacklistRepository;
+    @Mock ReservationService reservationService;
+    @Mock NotificationService notificationService;
+
+    @InjectMocks OverdueFineScheduler scheduler;
+
+    private User member;
+    private Book book;
+    private BookCopy copy;
+
+    @BeforeEach
+    void setUp() {
+        // dailyFineRate is @Value-injected and not part of the Lombok constructor,
+        // so it stays null under plain Mockito unit testing — set it via reflection,
+        // same convention used in LoanServiceTest for maxLoansStudent/maxLoansFaculty.
+        try {
+            Field rateField = OverdueFineScheduler.class.getDeclaredField("dailyFineRate");
+            rateField.setAccessible(true);
+            rateField.set(scheduler, new BigDecimal("0.50"));
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to set dailyFineRate for testing", e);
+        }
+
+        member = User.builder()
+                .id(1L).email("member@test.com").role(Role.STUDENT)
+                .fullName("Member One").universityId("UGR/1234/20").active(true).build();
+        book = Book.builder()
+                .id(1L).isbn("isbn-1").title("Clean Code").author("Robert Martin")
+                .category(BookCategory.SCIENCE).totalCopies(1).build();
+        copy = BookCopy.builder()
+                .id(1L).book(book).copyNumber("C-001")
+                .condition(CopyCondition.GOOD).status(CopyStatus.ON_LOAN).build();
+    }
+
+    // ── calculateOverdueFines ────────────────────────────────────────────────
+
+    @Test
+    void calculateOverdueFines_NoOverdueLoans_DoesNothing() {
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of());
+
+        scheduler.calculateOverdueFines();
+
+        verify(loanRepository, never()).save(any());
+        verify(fineRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void calculateOverdueFines_NoExistingFine_CreatesNewFineRecord() {
+        Loan loan = Loan.builder()
+                .id(1L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(3)).status(LoanStatus.ACTIVE).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of(loan));
+        when(fineRepository.findByLoan(loan)).thenReturn(Optional.empty());
+
+        scheduler.calculateOverdueFines();
+
+        assertEquals(LoanStatus.OVERDUE, loan.getStatus());
+        verify(loanRepository).save(loan);
+
+        ArgumentCaptor<FineRecord> captor = ArgumentCaptor.forClass(FineRecord.class);
+        verify(fineRepository).save(captor.capture());
+        FineRecord saved = captor.getValue();
+        assertEquals(loan, saved.getLoan());
+        assertEquals(member, saved.getMember());
+        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("1.50")));
+
+        verify(notificationService).sendOverdueFineNotice(
+                eq(member), eq("Clean Code"), eq(new BigDecimal("1.50")));
+    }
+
+    @Test
+    void calculateOverdueFines_ExistingFine_UpdatesAmountOnSameRecord() {
+        Loan loan = Loan.builder()
+                .id(1L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(5)).status(LoanStatus.ACTIVE).build();
+        FineRecord existing = FineRecord.builder()
+                .id(9L).loan(loan).member(member)
+                .amount(new BigDecimal("1.00")).status(FineStatus.UNPAID).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of(loan));
+        when(fineRepository.findByLoan(loan)).thenReturn(Optional.of(existing));
+
+        scheduler.calculateOverdueFines();
+
+        ArgumentCaptor<FineRecord> captor = ArgumentCaptor.forClass(FineRecord.class);
+        verify(fineRepository).save(captor.capture());
+        FineRecord saved = captor.getValue();
+
+        assertSame(existing, saved, "Should update the existing FineRecord, not create a new one");
+        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("2.50")));
+        verify(notificationService).sendOverdueFineNotice(
+                eq(member), eq("Clean Code"), eq(new BigDecimal("2.50")));
+    }
+
+    @Test
+    void calculateOverdueFines_MultipleLoans_ProcessesEachIndependently() {
+        Loan loan1 = Loan.builder()
+                .id(1L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(2)).status(LoanStatus.ACTIVE).build();
+
+        User member2 = User.builder()
+                .id(2L).email("member2@test.com").role(Role.FACULTY)
+                .fullName("Member Two").universityId("FAC/5678/20").active(true).build();
+        Book book2 = Book.builder()
+                .id(2L).isbn("isbn-2").title("Effective Java").author("Joshua Bloch")
+                .category(BookCategory.ENGINEERING).totalCopies(1).build();
+        BookCopy copy2 = BookCopy.builder()
+                .id(2L).book(book2).copyNumber("C-002")
+                .condition(CopyCondition.GOOD).status(CopyStatus.ON_LOAN).build();
+        Loan loan2 = Loan.builder()
+                .id(2L).member(member2).bookCopy(copy2)
+                .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of(loan1, loan2));
+        when(fineRepository.findByLoan(any())).thenReturn(Optional.empty());
+
+        scheduler.calculateOverdueFines();
+
+        assertEquals(LoanStatus.OVERDUE, loan1.getStatus());
+        assertEquals(LoanStatus.OVERDUE, loan2.getStatus());
+        verify(loanRepository, times(2)).save(any());
+        verify(fineRepository, times(2)).save(any());
+        verify(notificationService, times(2))
+                .sendOverdueFineNotice(any(), any(), any());
+    }
+
+    // ── expireStaleReservations ──────────────────────────────────────────────
+
+    @Test
+    void expireStaleReservations_DelegatesToReservationService() {
+        scheduler.expireStaleReservations();
+
+        verify(reservationService, times(1)).expireStaleNotifications();
+        verifyNoMoreInteractions(reservationService);
+    }
+
+    // ── cleanExpiredTokens ───────────────────────────────────────────────────
+
+    @Test
+    void cleanExpiredTokens_DeletesTokensExpiredBeforeNow() {
+        scheduler.cleanExpiredTokens();
+
+        verify(tokenBlacklistRepository, times(1))
+                .deleteByExpiresAtBefore(any(LocalDateTime.class));
+    }
+}
