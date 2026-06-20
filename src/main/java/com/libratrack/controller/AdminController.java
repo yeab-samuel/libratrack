@@ -1,5 +1,6 @@
 package com.libratrack.controller;
 import com.libratrack.dto.request.CreateStaffRequest;
+import com.libratrack.dto.request.UpdateUserNameRequest;
 import com.libratrack.dto.response.UserDTO;
 import com.libratrack.enums.Role;
 import com.libratrack.service.AuthService;
@@ -53,6 +54,20 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> activateUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.activateUser(id));
+    }
+
+    /**
+     * Correct a user's full name on file (e.g. it doesn't match the
+     * registry for their university ID). Used after verifying the
+     * person's identity directly, rather than requiring the account to
+     * be deleted and re-registered — which would orphan their existing
+     * loan/fine/reservation history.
+     */
+    @PatchMapping("/users/{id}/name")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> updateUserName(
+            @PathVariable Long id, @Valid @RequestBody UpdateUserNameRequest req) {
+        return ResponseEntity.ok(userService.updateFullName(id, req.fullName()));
     }
 
     /** Create a LIBRARIAN or ADMIN staff account (no university ID needed) */

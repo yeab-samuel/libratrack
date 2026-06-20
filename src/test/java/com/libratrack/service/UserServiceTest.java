@@ -169,4 +169,39 @@ class UserServiceTest {
 
         assertThrows(ResourceNotFoundException.class, () -> userService.activateUser(99L));
     }
+
+    // ── updateFullName ───────────────────────────────────────────────────
+
+    @Test
+    void updateFullName_Found_UpdatesAndSaves() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(authService.toDTO(user)).thenReturn(
+                new UserDTO(1L, "u@test.com", Role.STUDENT, "Corrected Name", "UGR/1234/20", true, null));
+
+        UserDTO result = userService.updateFullName(1L, "Corrected Name");
+
+        assertEquals("Corrected Name", user.getFullName());
+        assertEquals("Corrected Name", result.fullName());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateFullName_TrimsSurroundingWhitespace() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(authService.toDTO(user)).thenReturn(dto);
+
+        userService.updateFullName(1L, "  Spaced Name  ");
+
+        assertEquals("Spaced Name", user.getFullName());
+    }
+
+    @Test
+    void updateFullName_NotFound_ThrowsResourceNotFoundException() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> userService.updateFullName(99L, "Someone"));
+    }
 }
