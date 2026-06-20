@@ -35,7 +35,7 @@ class BookControllerTest extends BaseControllerTest {
 
     private BookDTO sampleDTO() {
         return new BookDTO(1L, "978-1", "Title", "Author",
-                BookCategory.SCIENCE, null, 2020, 2, null, LocalDateTime.now(), null, 0L);
+                BookCategory.SCIENCE, null, 2020, 2, 2, null, LocalDateTime.now(), null, 0L);
     }
 
     // ── POST /api/books ───────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ class BookControllerTest extends BaseControllerTest {
     void updateBook_AsAdmin_Returns200() throws Exception {
         var req = new UpdateBookRequest("New Title", null, null, null, null, null, null);
         var updated = new BookDTO(1L, "978-1", "New Title", "Author",
-                BookCategory.SCIENCE, null, 2020, 2, null, LocalDateTime.now(), null, 0L);
+                BookCategory.SCIENCE, null, 2020, 2, 2, null, LocalDateTime.now(), null, 0L);
         when(bookService.updateBook(eq(1L), any())).thenReturn(updated);
 
         mockMvc.perform(patch("/api/books/1")

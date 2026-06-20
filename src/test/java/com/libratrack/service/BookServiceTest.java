@@ -5,6 +5,7 @@ import com.libratrack.entity.Book;
 import com.libratrack.enums.BookCategory;
 import com.libratrack.exception.DuplicateResourceException;
 import com.libratrack.exception.ResourceNotFoundException;
+import com.libratrack.repository.BookCopyRepository;
 import com.libratrack.repository.BookRatingRepository;
 import com.libratrack.repository.BookRepository;
 import com.libratrack.specification.BookSpecification;
@@ -28,11 +29,17 @@ class BookServiceTest {
 
     @Mock BookRepository bookRepository;
     @Mock BookRatingRepository bookRatingRepository;
+    @Mock BookCopyRepository bookCopyRepository;
     @InjectMocks BookService bookService;
 
     @BeforeEach
     void setUp() {
         lenient().when(bookRatingRepository.findStatsByBookIds(any())).thenReturn(List.of());
+        // Default: no available copies unless a specific test overrides this.
+        // toDTO(Book) (single-lookup path) uses countByBookAndStatus.
+        lenient().when(bookCopyRepository.countByBookAndStatus(any(), any())).thenReturn(0L);
+        // searchBooks (paged path) uses the batch query instead.
+        lenient().when(bookCopyRepository.countAvailableByBookIds(any())).thenReturn(List.of());
     }
 
     // ── createBook ────────────────────────────────────────────────────────────
