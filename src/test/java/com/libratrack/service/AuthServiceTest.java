@@ -63,6 +63,45 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_NameDoesNotMatchRegistry_ThrowsIllegalArgumentException() {
+        var req = new RegisterRequest("Wrong Name", "john@test.com", "password123", Role.STUDENT, "ATE/9305/14");
+        when(userRepository.existsByEmail(req.email())).thenReturn(false);
+        when(userRepository.existsByUniversityId(req.universityId())).thenReturn(false);
+        when(registryRepository.findByUniversityIdAndRole(req.universityId(), req.role()))
+                .thenReturn(Optional.of(
+                        com.libratrack.entity.UniversityRegistry.builder()
+                                .universityId(req.universityId()).role(req.role())
+                                .fullName("John Doe").active(true).build()));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(req));
+        assertTrue(ex.getMessage().contains("does not match university records"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_NameMatchesIgnoringCaseAndExtraWhitespace_Succeeds() {
+        // The registry has "John Doe"; the applicant types it with different
+        // casing and extra internal whitespace. This should still be treated
+        // as a match — only the underlying content matters, not formatting.
+        var req = new RegisterRequest("  john   doe  ", "john@test.com", "password123", Role.STUDENT, "ATE/9305/14");
+        when(userRepository.existsByEmail(req.email())).thenReturn(false);
+        when(userRepository.existsByUniversityId(req.universityId())).thenReturn(false);
+        when(registryRepository.findByUniversityIdAndRole(req.universityId(), req.role()))
+                .thenReturn(Optional.of(
+                        com.libratrack.entity.UniversityRegistry.builder()
+                                .universityId(req.universityId()).role(req.role())
+                                .fullName("John Doe").active(true).build()));
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(userRepository.save(any())).thenReturn(
+                User.builder().id(1L).email(req.email()).role(req.role())
+                        .fullName(req.fullName()).universityId(req.universityId()).active(true).build());
+
+        var r = authService.register(req);
+        assertEquals("john@test.com", r.email());
+    }
+
+    @Test
     void login_HappyPath_ReturnsToken() {
         var req = new LoginRequest("john@test.com", "password123");
         User user = User.builder().id(1L).email("john@test.com").role(Role.STUDENT)

@@ -44,6 +44,19 @@ public class AuthService {
         if (!entry.getActive())
             throw new IllegalArgumentException("University ID '" + req.universityId() + "' is inactive in the registry.");
 
+        // The full name must match what the registrar has on file for this ID.
+        // Students/faculty present a physical university ID at the loan desk —
+        // if the displayed name didn't match the ID, librarians couldn't verify
+        // identity, so this is enforced at registration time rather than left
+        // as a cosmetic mismatch. Comparison is whitespace-normalized and
+        // case-insensitive so trivial formatting differences (extra spaces,
+        // capitalization) don't block a legitimate registration.
+        if (!namesMatch(req.fullName(), entry.getFullName()))
+            throw new IllegalArgumentException(
+                    "The name you entered does not match university records for ID '" + req.universityId() +
+                            "'. Please enter your name exactly as it appears on your official university ID, " +
+                            "or contact the registrar's office if you believe this is an error.");
+
         User u = User.builder()
                 .email(req.email())
                 .passwordHash(passwordEncoder.encode(req.password()))
@@ -52,6 +65,14 @@ public class AuthService {
                 .universityId(req.universityId())
                 .build();
         return toDTO(userRepository.save(u));
+    }
+
+    private static boolean namesMatch(String typed, String onFile) {
+        return normalizeName(typed).equalsIgnoreCase(normalizeName(onFile));
+    }
+
+    private static String normalizeName(String s) {
+        return s == null ? "" : s.trim().replaceAll("\\s+", " ");
     }
 
     /** Admin-only: create a LIBRARIAN or ADMIN account with a staff ID. */
