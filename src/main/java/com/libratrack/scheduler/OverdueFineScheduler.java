@@ -22,27 +22,37 @@ public class OverdueFineScheduler {
     private final NotificationService notificationService;
 
     @Value("${app.daily-fine-rate:0.50}") private BigDecimal dailyFineRate;
+    @Value("${app.fine-grace-days:2}") private int fineGraceDays;
 
-    /** Runs at 01:00 every night — marks loans overdue and accrues fines */
+    /**
+     * Runs at 01:00 every night — marks loans overdue and accrues fines, with
+     * a short grace period (fineGraceDays) before either kicks in. A loan
+     * within the grace window stays ACTIVE untouched and is simply
+     * re-evaluated on the next nightly run; only once it's genuinely overdue
+     * (past the grace period) does it flip to OVERDUE and start owing a fine.
+     */
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void calculateOverdueFines() {
         var loans = loanRepository.findAllByStatusAndDueDateBefore(LoanStatus.ACTIVE, LocalDate.now());
         log.info("Overdue scheduler: {} loans to process", loans.size());
         for (Loan loan : loans) {
+            long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
+            if (daysLate <= fineGraceDays) continue;
+
             loan.setStatus(LoanStatus.OVERDUE);
             loanRepository.save(loan);
 
-            long days = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
-            BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(days));
+            long billableDays = daysLate - fineGraceDays;
+            BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(billableDays));
 
             fineRepository.findByLoan(loan).ifPresentOrElse(
-                f -> { f.setAmount(amount); fineRepository.save(f); },
-                () -> fineRepository.save(FineRecord.builder()
-                    .loan(loan).member(loan.getMember()).amount(amount).build())
+                    f -> { f.setAmount(amount); fineRepository.save(f); },
+                    () -> fineRepository.save(FineRecord.builder()
+                            .loan(loan).member(loan.getMember()).amount(amount).build())
             );
             notificationService.sendOverdueFineNotice(
-                loan.getMember(), loan.getBookCopy().getBook().getTitle(), amount);
+                    loan.getMember(), loan.getBookCopy().getBook().getTitle(), amount);
         }
     }
 

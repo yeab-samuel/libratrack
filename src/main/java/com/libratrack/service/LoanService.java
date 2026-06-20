@@ -31,6 +31,12 @@ public class LoanService {
     private int maxLoansStudent;
     @Value("${app.max-loans-faculty:5}")
     private int maxLoansFaculty;
+    @Value("${app.max-loan-days-student:14}")
+    private int maxLoanDaysStudent;
+    @Value("${app.max-loan-days-faculty:30}")
+    private int maxLoanDaysFaculty;
+    @Value("${app.fine-grace-days:2}")
+    private int fineGraceDays;
 
     // ── STUDENT / FACULTY self-service borrow ─────────────────────────────────
 
@@ -38,6 +44,8 @@ public class LoanService {
     public LoanDTO borrowDirectly(BorrowRequest req, String memberEmail) {
         User member = userRepository.findByEmail(memberEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        validateLoanDuration(req.dueDate(), member.getRole());
 
         BookCopy copy = copyRepository.findById(req.bookCopyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Copy not found: " + req.bookCopyId()));
@@ -93,6 +101,8 @@ public class LoanService {
         if (!member.isEnabled())
             throw new ResourceNotFoundException("Member account is inactive.");
 
+        validateLoanDuration(req.dueDate(), member.getRole());
+
         checkReservationEnforcement(copy.getBook(), member);
         validateBorrowEligibility(member);
 
@@ -139,17 +149,24 @@ public class LoanService {
         loan.setProcessedBy(staff);
 
         if (LocalDate.now().isAfter(loan.getDueDate())) {
-            long days = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
-            BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(days));
-            fineRepository.findByLoan(loan).ifPresentOrElse(
-                    f -> {
-                        f.setAmount(amount);
-                        fineRepository.save(f);
-                    },
-                    () -> fineRepository.save(FineRecord.builder()
-                            .loan(loan).member(loan.getMember()).amount(amount).build())
-            );
-            log.info("Fine created: member={} days={} amount={}", loan.getMember().getEmail(), days, amount);
+            long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
+            // The first fineGraceDays of lateness are free — a fine only accrues
+            // for days beyond that buffer (e.g. grace=2: 1-2 days late = $0,
+            // 3 days late = 1 billable day).
+            long billableDays = Math.max(0, daysLate - fineGraceDays);
+            if (billableDays > 0) {
+                BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(billableDays));
+                fineRepository.findByLoan(loan).ifPresentOrElse(
+                        f -> {
+                            f.setAmount(amount);
+                            fineRepository.save(f);
+                        },
+                        () -> fineRepository.save(FineRecord.builder()
+                                .loan(loan).member(loan.getMember()).amount(amount).build())
+                );
+                log.info("Fine created: member={} daysLate={} billableDays={} amount={}",
+                        loan.getMember().getEmail(), daysLate, billableDays, amount);
+            }
         }
 
         BookCopy copy = loan.getBookCopy();
@@ -209,11 +226,29 @@ public class LoanService {
         if (!req.newDueDate().isAfter(loan.getDueDate()))
             throw new IllegalArgumentException("New due date must be after current due date: " + loan.getDueDate());
 
+        validateLoanDuration(req.newDueDate(), loan.getMember().getRole());
+
         loan.setDueDate(req.newDueDate());
         return toDTO(loanRepository.save(loan));
     }
 
     // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    /**
+     * Caps how far out a due date (new borrow, counter loan, or extension) can
+     * be set, based on the member's role — 14 days for students, 30 for
+     * faculty by default. Always measured from today, not from issuedAt, so
+     * the same rule applies cleanly whether this is an initial borrow or a
+     * later extension.
+     */
+    private void validateLoanDuration(LocalDate dueDate, Role role) {
+        int maxDays = (role == Role.FACULTY) ? maxLoanDaysFaculty : maxLoanDaysStudent;
+        LocalDate latestAllowed = LocalDate.now().plusDays(maxDays);
+        if (dueDate.isAfter(latestAllowed))
+            throw new IllegalArgumentException(
+                    "Due date exceeds the maximum loan period of " + maxDays + " days for " + role +
+                            ". Latest allowed due date: " + latestAllowed);
+    }
 
     private void checkReservationEnforcement(Book book, User member) {
         reservationRepository

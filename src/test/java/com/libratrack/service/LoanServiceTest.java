@@ -1,4 +1,5 @@
 package com.libratrack.service;
+import com.libratrack.dto.request.BorrowRequest;
 import com.libratrack.dto.request.CreateLoanRequest;
 import com.libratrack.dto.request.ExtendLoanRequest;
 import com.libratrack.entity.*;
@@ -46,6 +47,22 @@ class LoanServiceTest {
             maxLoansFacultyField.setAccessible(true);
             maxLoansFacultyField.set(loanService, 5);
 
+            Field maxLoanDaysStudentField = LoanService.class.getDeclaredField("maxLoanDaysStudent");
+            maxLoanDaysStudentField.setAccessible(true);
+            maxLoanDaysStudentField.set(loanService, 14);
+
+            Field maxLoanDaysFacultyField = LoanService.class.getDeclaredField("maxLoanDaysFaculty");
+            maxLoanDaysFacultyField.setAccessible(true);
+            maxLoanDaysFacultyField.set(loanService, 30);
+
+            Field fineGraceDaysField = LoanService.class.getDeclaredField("fineGraceDays");
+            fineGraceDaysField.setAccessible(true);
+            fineGraceDaysField.set(loanService, 2);
+
+            Field dailyFineRateField = LoanService.class.getDeclaredField("dailyFineRate");
+            dailyFineRateField.setAccessible(true);
+            dailyFineRateField.set(loanService, new java.math.BigDecimal("0.50"));
+
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to set borrow limits for testing", e);
         }
@@ -80,6 +97,139 @@ class LoanServiceTest {
                 any(Book.class), any(ReservationStatus.class)))
                 .thenReturn(Optional.empty());
         assertThrows(BorrowLimitExceededException.class,()->loanService.createLoan(new CreateLoanRequest(1L,1L,LocalDate.now().plusDays(14)),"lib@test.com"));}
+
+    // ── max loan duration ────────────────────────────────────────────────────
+
+    @Test
+    void borrowDirectly_WithinMaxDuration_Succeeds() {
+        when(userRepository.findByEmail("s@test.com")).thenReturn(Optional.of(student));
+        when(copyRepository.findById(1L)).thenReturn(Optional.of(copy));
+        when(fineRepository.existsByMemberAndStatus(student, FineStatus.UNPAID)).thenReturn(false);
+        when(loanRepository.countByMemberAndStatus(student, LoanStatus.ACTIVE)).thenReturn(0L);
+        when(loanRepository.countByMemberAndStatus(student, LoanStatus.OVERDUE)).thenReturn(0L);
+        when(reservationRepository.findFirstByBookAndStatusOrderByQueuePositionAsc(
+                any(Book.class), any(ReservationStatus.class))).thenReturn(Optional.empty());
+        Loan saved = Loan.builder().id(1L).member(student).bookCopy(copy)
+                .dueDate(LocalDate.now().plusDays(14)).build();
+        when(loanRepository.save(any())).thenReturn(saved);
+
+        var result = loanService.borrowDirectly(
+                new BorrowRequest(1L, LocalDate.now().plusDays(14)), "s@test.com");
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void borrowDirectly_ExceedsMaxDurationForStudent_ThrowsIllegalArgumentException() {
+        when(userRepository.findByEmail("s@test.com")).thenReturn(Optional.of(student));
+
+        // 14-day cap for students — 15 days should be rejected before any
+        // copy/eligibility lookups even happen.
+        assertThrows(IllegalArgumentException.class,
+                () -> loanService.borrowDirectly(
+                        new BorrowRequest(1L, LocalDate.now().plusDays(15)), "s@test.com"));
+        verifyNoInteractions(copyRepository);
+    }
+
+    @Test
+    void createLoan_ExceedsMaxDurationForStudent_ThrowsIllegalArgumentException() {
+        when(copyRepository.findById(1L)).thenReturn(Optional.of(copy));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> loanService.createLoan(
+                        new CreateLoanRequest(1L, 1L, LocalDate.now().plusDays(15)), "lib@test.com"));
+    }
+
+    @Test
+    void createLoan_FacultyWithinExtendedMaxDuration_Succeeds() {
+        User faculty = User.builder().id(3L).email("f@test.com").role(Role.FACULTY).fullName("Faculty").active(true).build();
+        User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
+        Loan saved = Loan.builder().id(1L).member(faculty).bookCopy(copy)
+                .dueDate(LocalDate.now().plusDays(30)).processedBy(lib).build();
+        when(copyRepository.findById(1L)).thenReturn(Optional.of(copy));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(faculty));
+        when(fineRepository.existsByMemberAndStatus(faculty, FineStatus.UNPAID)).thenReturn(false);
+        when(loanRepository.countByMemberAndStatus(faculty, LoanStatus.ACTIVE)).thenReturn(0L);
+        when(loanRepository.countByMemberAndStatus(faculty, LoanStatus.OVERDUE)).thenReturn(0L);
+        when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
+        when(loanRepository.save(any())).thenReturn(saved);
+        when(reservationRepository.findFirstByBookAndStatusOrderByQueuePositionAsc(
+                any(Book.class), eq(ReservationStatus.NOTIFIED))).thenReturn(Optional.empty());
+
+        // 30 days is within the faculty cap, even though it would exceed the
+        // student cap — confirms the limit is genuinely role-aware.
+        var result = loanService.createLoan(
+                new CreateLoanRequest(3L, 1L, LocalDate.now().plusDays(30)), "lib@test.com");
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void extendLoan_ExceedsMaxDuration_ThrowsIllegalArgumentException() {
+        User faculty = User.builder().id(1L).email("f@test.com").role(Role.FACULTY).fullName("Faculty").active(true).build();
+        LocalDate currentDue = LocalDate.now().plusDays(7);
+        Loan loan = Loan.builder().id(1L).member(faculty).bookCopy(copy).dueDate(currentDue).status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
+        when(userRepository.findByEmail("f@test.com")).thenReturn(Optional.of(faculty));
+
+        // Faculty cap is 30 days from today — 31 days out should be rejected.
+        assertThrows(IllegalArgumentException.class,
+                () -> loanService.extendLoan(1L, new ExtendLoanRequest(LocalDate.now().plusDays(31)), "f@test.com"));
+        verify(loanRepository, never()).save(any());
+    }
+
+    // ── returnLoan fine grace period ─────────────────────────────────────────
+
+    @Test
+    void returnLoan_NotOverdue_NoFineCreated() {
+        User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
+        Loan loan = Loan.builder().id(1L).member(student).bookCopy(copy)
+                .dueDate(LocalDate.now().plusDays(3)).status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
+        when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
+        when(loanRepository.save(any())).thenReturn(loan);
+
+        loanService.returnLoan(1L, "lib@test.com");
+
+        verify(fineRepository, never()).findByLoan(any());
+        verify(fineRepository, never()).save(any());
+        verify(reservationService).notifyNextInQueue(copy.getBook());
+    }
+
+    @Test
+    void returnLoan_WithinGracePeriod_NoFineCreated() {
+        User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
+        // 1 day late — within the 2-day grace period, so no fine yet.
+        Loan loan = Loan.builder().id(1L).member(student).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
+        when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
+        when(loanRepository.save(any())).thenReturn(loan);
+
+        loanService.returnLoan(1L, "lib@test.com");
+
+        verify(fineRepository, never()).findByLoan(any());
+        verify(fineRepository, never()).save(any());
+    }
+
+    @Test
+    void returnLoan_PastGracePeriod_CreatesFineForBillableDaysOnly() {
+        User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
+        // 5 days late, 2-day grace => 3 billable days => $1.50
+        Loan loan = Loan.builder().id(1L).member(student).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(5)).status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
+        when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
+        when(loanRepository.save(any())).thenReturn(loan);
+        when(fineRepository.findByLoan(loan)).thenReturn(Optional.empty());
+
+        loanService.returnLoan(1L, "lib@test.com");
+
+        ArgumentCaptor<FineRecord> captor = ArgumentCaptor.forClass(FineRecord.class);
+        verify(fineRepository).save(captor.capture());
+        assertEquals(0, captor.getValue().getAmount().compareTo(new java.math.BigDecimal("1.50")));
+    }
 
     // ── extendLoan tests ──────────────────────────────────────────────────────
 

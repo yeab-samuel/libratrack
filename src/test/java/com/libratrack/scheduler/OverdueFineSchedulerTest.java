@@ -48,8 +48,12 @@ class OverdueFineSchedulerTest {
             Field rateField = OverdueFineScheduler.class.getDeclaredField("dailyFineRate");
             rateField.setAccessible(true);
             rateField.set(scheduler, new BigDecimal("0.50"));
+
+            Field graceField = OverdueFineScheduler.class.getDeclaredField("fineGraceDays");
+            graceField.setAccessible(true);
+            graceField.set(scheduler, 2);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to set dailyFineRate for testing", e);
+            throw new RuntimeException("Failed to set scheduler config for testing", e);
         }
 
         member = User.builder()
@@ -78,6 +82,31 @@ class OverdueFineSchedulerTest {
     }
 
     @Test
+    void calculateOverdueFines_WithinGracePeriod_LeavesLoanActiveAndDoesNotFine() {
+        // 1 day late and 2 days late are both within the 2-day grace period —
+        // neither should be touched at all: no status change, no fine, no
+        // notification. They'll be re-evaluated again on a later run.
+        Loan oneDay = Loan.builder()
+                .id(1L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
+        Loan twoDays = Loan.builder()
+                .id(2L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(2)).status(LoanStatus.ACTIVE).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of(oneDay, twoDays));
+
+        scheduler.calculateOverdueFines();
+
+        assertEquals(LoanStatus.ACTIVE, oneDay.getStatus());
+        assertEquals(LoanStatus.ACTIVE, twoDays.getStatus());
+        verify(loanRepository, never()).save(any());
+        verify(fineRepository, never()).findByLoan(any());
+        verify(fineRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
     void calculateOverdueFines_NoExistingFine_CreatesNewFineRecord() {
         Loan loan = Loan.builder()
                 .id(1L).member(member).bookCopy(copy)
@@ -97,10 +126,10 @@ class OverdueFineSchedulerTest {
         FineRecord saved = captor.getValue();
         assertEquals(loan, saved.getLoan());
         assertEquals(member, saved.getMember());
-        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("1.50")));
+        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("0.50")));
 
         verify(notificationService).sendOverdueFineNotice(
-                eq(member), eq("Clean Code"), eq(new BigDecimal("1.50")));
+                eq(member), eq("Clean Code"), eq(new BigDecimal("0.50")));
     }
 
     @Test
@@ -123,16 +152,16 @@ class OverdueFineSchedulerTest {
         FineRecord saved = captor.getValue();
 
         assertSame(existing, saved, "Should update the existing FineRecord, not create a new one");
-        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("2.50")));
+        assertEquals(0, saved.getAmount().compareTo(new BigDecimal("1.50")));
         verify(notificationService).sendOverdueFineNotice(
-                eq(member), eq("Clean Code"), eq(new BigDecimal("2.50")));
+                eq(member), eq("Clean Code"), eq(new BigDecimal("1.50")));
     }
 
     @Test
     void calculateOverdueFines_MultipleLoans_ProcessesEachIndependently() {
         Loan loan1 = Loan.builder()
                 .id(1L).member(member).bookCopy(copy)
-                .dueDate(LocalDate.now().minusDays(2)).status(LoanStatus.ACTIVE).build();
+                .dueDate(LocalDate.now().minusDays(4)).status(LoanStatus.ACTIVE).build();
 
         User member2 = User.builder()
                 .id(2L).email("member2@test.com").role(Role.FACULTY)
@@ -145,7 +174,7 @@ class OverdueFineSchedulerTest {
                 .condition(CopyCondition.GOOD).status(CopyStatus.ON_LOAN).build();
         Loan loan2 = Loan.builder()
                 .id(2L).member(member2).bookCopy(copy2)
-                .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
+                .dueDate(LocalDate.now().minusDays(6)).status(LoanStatus.ACTIVE).build();
 
         when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
                 .thenReturn(List.of(loan1, loan2));
