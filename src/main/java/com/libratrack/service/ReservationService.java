@@ -26,9 +26,9 @@ public class ReservationService {
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public ReservationDTO createReservation(CreateReservationRequest req, String email) {
         Book book = bookRepository.findById(req.bookId())
-            .orElseThrow(() -> new ResourceNotFoundException("Book not found: " + req.bookId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found: " + req.bookId()));
         User member = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (copyRepository.countByBookAndStatus(book, CopyStatus.AVAILABLE) > 0)
             throw new NoCopyAvailableException("Copies available. Borrow directly from the catalogue.");
@@ -41,8 +41,8 @@ public class ReservationService {
         int pos;
         if (member.getRole() == Role.FACULTY) {
             int firstStudentPos = reservationRepository
-                .findFirstStudentQueuePosition(book)
-                .orElse(reservationRepository.findMaxQueuePositionByBook(book) + 1);
+                    .findFirstStudentQueuePosition(book)
+                    .orElse(reservationRepository.findMaxQueuePositionByBook(book) + 1);
             // Shift all students at or after that position down by 1
             reservationRepository.incrementQueuePositionsFrom(book, firstStudentPos);
             pos = firstStudentPos;
@@ -51,35 +51,46 @@ public class ReservationService {
         }
 
         Reservation saved = reservationRepository.save(
-            Reservation.builder()
-                .member(member)
-                .book(book)
-                .queuePosition(pos)
-                .build()
+                Reservation.builder()
+                        .member(member)
+                        .book(book)
+                        .queuePosition(pos)
+                        .build()
         );
         log.info("Reservation created: user={} book='{}' pos={} role={}",
-            member.getEmail(), book.getTitle(), pos, member.getRole());
+                member.getEmail(), book.getTitle(), pos, member.getRole());
         return toDTO(saved);
     }
 
     @Transactional
     public void cancelReservation(Long id, String email) {
         Reservation r = reservationRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + id));
         User caller = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (caller.getRole() != Role.ADMIN && !r.getMember().getId().equals(caller.getId()))
             throw new AccessDeniedException("Access denied");
 
+        boolean wasNotified = r.getStatus() == ReservationStatus.NOTIFIED;
+        Book book = r.getBook();
+
         r.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(r);
+
+        // If this reservation was already NOTIFIED (a copy was set aside for this
+        // person), cancelling it frees that copy — so immediately advance the queue
+        // and notify whoever is next in line. Without this, the next WAITING person
+        // would never find out the copy is available until the nightly expiry job ran.
+        if (wasNotified) {
+            notifyNextInQueue(book);
+        }
     }
 
     @Transactional(readOnly = true)
     public Page<ReservationDTO> getMyReservations(String email, Pageable pageable) {
         User m = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return reservationRepository.findByMember(m, pageable).map(this::toDTO);
     }
 
@@ -95,17 +106,17 @@ public class ReservationService {
     @Transactional
     public void notifyNextInQueue(Book book) {
         reservationRepository
-            .findFirstByBookAndStatusOrderByQueuePositionAsc(book, ReservationStatus.WAITING)
-            .ifPresent(r -> {
-                LocalDate expiresAt = LocalDate.now().plusDays(3);
-                r.setStatus(ReservationStatus.NOTIFIED);
-                r.setNotifiedAt(LocalDateTime.now());
-                r.setExpiresAt(expiresAt);
-                reservationRepository.save(r);
-                log.info("Notified user={} for book='{}' — collect by {}",
-                    r.getMember().getEmail(), book.getTitle(), expiresAt);
-                notificationService.sendReservationReady(r.getMember(), book, expiresAt);
-            });
+                .findFirstByBookAndStatusOrderByQueuePositionAsc(book, ReservationStatus.WAITING)
+                .ifPresent(r -> {
+                    LocalDate expiresAt = LocalDate.now().plusDays(3);
+                    r.setStatus(ReservationStatus.NOTIFIED);
+                    r.setNotifiedAt(LocalDateTime.now());
+                    r.setExpiresAt(expiresAt);
+                    reservationRepository.save(r);
+                    log.info("Notified user={} for book='{}' — collect by {}",
+                            r.getMember().getEmail(), book.getTitle(), expiresAt);
+                    notificationService.sendReservationReady(r.getMember(), book, expiresAt);
+                });
     }
 
     /**
@@ -116,7 +127,7 @@ public class ReservationService {
     public void expireStaleNotifications() {
         reservationRepository.findExpiredNotifications(LocalDate.now()).forEach(r -> {
             log.info("Reservation expired: user={} book='{}'",
-                r.getMember().getEmail(), r.getBook().getTitle());
+                    r.getMember().getEmail(), r.getBook().getTitle());
             notificationService.sendReservationExpired(r.getMember(), r.getBook());
             r.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(r);
@@ -126,10 +137,10 @@ public class ReservationService {
 
     public ReservationDTO toDTO(Reservation r) {
         return new ReservationDTO(
-            r.getId(), r.getMember().getId(), r.getMember().getFullName(),
-            r.getBook().getId(), r.getBook().getTitle(),
-            r.getQueuePosition(), r.getStatus(),
-            r.getReservedAt(), r.getNotifiedAt(), r.getExpiresAt()
+                r.getId(), r.getMember().getId(), r.getMember().getFullName(),
+                r.getBook().getId(), r.getBook().getTitle(),
+                r.getQueuePosition(), r.getStatus(),
+                r.getReservedAt(), r.getNotifiedAt(), r.getExpiresAt()
         );
     }
 }
