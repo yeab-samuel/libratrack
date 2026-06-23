@@ -24,9 +24,8 @@ public class LoanService {
     private final FineRecordRepository fineRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
+    private final FineCalculator fineCalculator;
 
-    @Value("${app.daily-fine-rate:0.50}")
-    private BigDecimal dailyFineRate;
     @Value("${app.max-loans-student:3}")
     private int maxLoansStudent;
     @Value("${app.max-loans-faculty:5}")
@@ -35,8 +34,6 @@ public class LoanService {
     private int maxLoanDaysStudent;
     @Value("${app.max-loan-days-faculty:30}")
     private int maxLoanDaysFaculty;
-    @Value("${app.fine-grace-days:2}")
-    private int fineGraceDays;
 
     // ── STUDENT / FACULTY self-service borrow ─────────────────────────────────
 
@@ -150,12 +147,8 @@ public class LoanService {
 
         if (LocalDate.now().isAfter(loan.getDueDate())) {
             long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
-            // The first fineGraceDays of lateness are free — a fine only accrues
-            // for days beyond that buffer (e.g. grace=2: 1-2 days late = $0,
-            // 3 days late = 1 billable day).
-            long billableDays = Math.max(0, daysLate - fineGraceDays);
-            if (billableDays > 0) {
-                BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(billableDays));
+            if (fineCalculator.isBillable(daysLate)) {
+                BigDecimal amount = fineCalculator.calculate(daysLate);
                 fineRepository.findByLoan(loan).ifPresentOrElse(
                         f -> {
                             f.setAmount(amount);
@@ -164,8 +157,8 @@ public class LoanService {
                         () -> fineRepository.save(FineRecord.builder()
                                 .loan(loan).member(loan.getMember()).amount(amount).build())
                 );
-                log.info("Fine created: member={} daysLate={} billableDays={} amount={}",
-                        loan.getMember().getEmail(), daysLate, billableDays, amount);
+                log.info("Fine created: member={} daysLate={} amount={}",
+                        loan.getMember().getEmail(), daysLate, amount);
             }
         }
 

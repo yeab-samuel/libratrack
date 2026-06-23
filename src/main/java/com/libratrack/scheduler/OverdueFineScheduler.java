@@ -5,7 +5,6 @@ import com.libratrack.repository.*;
 import com.libratrack.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +19,14 @@ public class OverdueFineScheduler {
     private final TokenBlacklistRepository tokenBlacklistRepository;
     private final ReservationService reservationService;
     private final NotificationService notificationService;
-
-    @Value("${app.daily-fine-rate:0.50}") private BigDecimal dailyFineRate;
-    @Value("${app.fine-grace-days:2}") private int fineGraceDays;
+    private final FineCalculator fineCalculator;
 
     /**
-     * Runs at 01:00 every night — marks loans overdue and accrues fines, with
-     * a short grace period (fineGraceDays) before either kicks in. A loan
-     * within the grace window stays ACTIVE untouched and is simply
-     * re-evaluated on the next nightly run; only once it's genuinely overdue
-     * (past the grace period) does it flip to OVERDUE and start owing a fine.
+     * Runs at 01:00 every night — marks loans overdue and accrues fines using
+     * the shared, tiered FineCalculator (grace period, then normal rate, then
+     * double rate once significantly overdue). A loan within the grace
+     * window is left untouched and simply re-evaluated on the next nightly
+     * run; only once it's genuinely overdue does it flip to OVERDUE.
      */
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
@@ -38,13 +35,12 @@ public class OverdueFineScheduler {
         log.info("Overdue scheduler: {} loans to process", loans.size());
         for (Loan loan : loans) {
             long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
-            if (daysLate <= fineGraceDays) continue;
+            if (!fineCalculator.isBillable(daysLate)) continue;
 
             loan.setStatus(LoanStatus.OVERDUE);
             loanRepository.save(loan);
 
-            long billableDays = daysLate - fineGraceDays;
-            BigDecimal amount = dailyFineRate.multiply(BigDecimal.valueOf(billableDays));
+            BigDecimal amount = fineCalculator.calculate(daysLate);
 
             fineRepository.findByLoan(loan).ifPresentOrElse(
                     f -> { f.setAmount(amount); fineRepository.save(f); },

@@ -3,6 +3,7 @@ package com.libratrack.scheduler;
 import com.libratrack.entity.*;
 import com.libratrack.enums.*;
 import com.libratrack.repository.*;
+import com.libratrack.service.FineCalculator;
 import com.libratrack.service.NotificationService;
 import com.libratrack.service.ReservationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +32,7 @@ class OverdueFineSchedulerTest {
     @Mock TokenBlacklistRepository tokenBlacklistRepository;
     @Mock ReservationService reservationService;
     @Mock NotificationService notificationService;
+    @Mock FineCalculator fineCalculator;
 
     @InjectMocks OverdueFineScheduler scheduler;
 
@@ -41,21 +42,6 @@ class OverdueFineSchedulerTest {
 
     @BeforeEach
     void setUp() {
-        // dailyFineRate is @Value-injected and not part of the Lombok constructor,
-        // so it stays null under plain Mockito unit testing — set it via reflection,
-        // same convention used in LoanServiceTest for maxLoansStudent/maxLoansFaculty.
-        try {
-            Field rateField = OverdueFineScheduler.class.getDeclaredField("dailyFineRate");
-            rateField.setAccessible(true);
-            rateField.set(scheduler, new BigDecimal("0.50"));
-
-            Field graceField = OverdueFineScheduler.class.getDeclaredField("fineGraceDays");
-            graceField.setAccessible(true);
-            graceField.set(scheduler, 2);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to set scheduler config for testing", e);
-        }
-
         member = User.builder()
                 .id(1L).email("member@test.com").role(Role.STUDENT)
                 .fullName("Member One").universityId("UGR/1234/20").active(true).build();
@@ -78,14 +64,15 @@ class OverdueFineSchedulerTest {
 
         verify(loanRepository, never()).save(any());
         verify(fineRepository, never()).save(any());
-        verifyNoInteractions(notificationService);
+        verifyNoInteractions(notificationService, fineCalculator);
     }
 
     @Test
     void calculateOverdueFines_WithinGracePeriod_LeavesLoanActiveAndDoesNotFine() {
-        // 1 day late and 2 days late are both within the 2-day grace period —
-        // neither should be touched at all: no status change, no fine, no
-        // notification. They'll be re-evaluated again on a later run.
+        // 1 day late and 2 days late are both within the grace period per
+        // FineCalculator — neither should be touched at all: no status
+        // change, no fine, no notification. They'll be re-evaluated again
+        // on a later run.
         Loan oneDay = Loan.builder()
                 .id(1L).member(member).bookCopy(copy)
                 .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
@@ -95,6 +82,8 @@ class OverdueFineSchedulerTest {
 
         when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
                 .thenReturn(List.of(oneDay, twoDays));
+        when(fineCalculator.isBillable(1)).thenReturn(false);
+        when(fineCalculator.isBillable(2)).thenReturn(false);
 
         scheduler.calculateOverdueFines();
 
@@ -103,6 +92,7 @@ class OverdueFineSchedulerTest {
         verify(loanRepository, never()).save(any());
         verify(fineRepository, never()).findByLoan(any());
         verify(fineRepository, never()).save(any());
+        verify(fineCalculator, never()).calculate(anyLong());
         verifyNoInteractions(notificationService);
     }
 
@@ -115,6 +105,8 @@ class OverdueFineSchedulerTest {
         when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
                 .thenReturn(List.of(loan));
         when(fineRepository.findByLoan(loan)).thenReturn(Optional.empty());
+        when(fineCalculator.isBillable(3)).thenReturn(true);
+        when(fineCalculator.calculate(3)).thenReturn(new BigDecimal("0.50"));
 
         scheduler.calculateOverdueFines();
 
@@ -144,6 +136,8 @@ class OverdueFineSchedulerTest {
         when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
                 .thenReturn(List.of(loan));
         when(fineRepository.findByLoan(loan)).thenReturn(Optional.of(existing));
+        when(fineCalculator.isBillable(5)).thenReturn(true);
+        when(fineCalculator.calculate(5)).thenReturn(new BigDecimal("1.50"));
 
         scheduler.calculateOverdueFines();
 
@@ -179,6 +173,10 @@ class OverdueFineSchedulerTest {
         when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
                 .thenReturn(List.of(loan1, loan2));
         when(fineRepository.findByLoan(any())).thenReturn(Optional.empty());
+        when(fineCalculator.isBillable(4)).thenReturn(true);
+        when(fineCalculator.calculate(4)).thenReturn(new BigDecimal("1.00"));
+        when(fineCalculator.isBillable(6)).thenReturn(true);
+        when(fineCalculator.calculate(6)).thenReturn(new BigDecimal("2.00"));
 
         scheduler.calculateOverdueFines();
 

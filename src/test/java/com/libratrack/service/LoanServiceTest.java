@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import java.lang.reflect.Field;
@@ -27,6 +28,7 @@ class LoanServiceTest {
     @Mock FineRecordRepository fineRepository;
     @Mock ReservationRepository reservationRepository;
     @Mock ReservationService reservationService;
+    @Mock FineCalculator fineCalculator;
 
     @InjectMocks LoanService loanService;
 
@@ -54,14 +56,6 @@ class LoanServiceTest {
             Field maxLoanDaysFacultyField = LoanService.class.getDeclaredField("maxLoanDaysFaculty");
             maxLoanDaysFacultyField.setAccessible(true);
             maxLoanDaysFacultyField.set(loanService, 30);
-
-            Field fineGraceDaysField = LoanService.class.getDeclaredField("fineGraceDays");
-            fineGraceDaysField.setAccessible(true);
-            fineGraceDaysField.set(loanService, 2);
-
-            Field dailyFineRateField = LoanService.class.getDeclaredField("dailyFineRate");
-            dailyFineRateField.setAccessible(true);
-            dailyFineRateField.set(loanService, new java.math.BigDecimal("0.50"));
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Failed to set borrow limits for testing", e);
@@ -200,32 +194,38 @@ class LoanServiceTest {
     @Test
     void returnLoan_WithinGracePeriod_NoFineCreated() {
         User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
-        // 1 day late — within the 2-day grace period, so no fine yet.
+        // 1 day late — within the grace period per FineCalculator, so no fine yet.
         Loan loan = Loan.builder().id(1L).member(student).bookCopy(copy)
                 .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
         when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
         when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
         when(loanRepository.save(any())).thenReturn(loan);
+        when(fineCalculator.isBillable(1)).thenReturn(false);
 
         loanService.returnLoan(1L, "lib@test.com");
 
         verify(fineRepository, never()).findByLoan(any());
         verify(fineRepository, never()).save(any());
+        verify(fineCalculator, never()).calculate(anyLong());
     }
 
     @Test
-    void returnLoan_PastGracePeriod_CreatesFineForBillableDaysOnly() {
+    void returnLoan_PastGracePeriod_UsesFineCalculatorAmount() {
         User lib = User.builder().id(2L).email("lib@test.com").role(Role.LIBRARIAN).fullName("Lib").active(true).build();
-        // 5 days late, 2-day grace => 3 billable days => $1.50
         Loan loan = Loan.builder().id(1L).member(student).bookCopy(copy)
                 .dueDate(LocalDate.now().minusDays(5)).status(LoanStatus.ACTIVE).build();
         when(loanRepository.findById(1L)).thenReturn(Optional.of(loan));
         when(userRepository.findByEmail("lib@test.com")).thenReturn(Optional.of(lib));
         when(loanRepository.save(any())).thenReturn(loan);
         when(fineRepository.findByLoan(loan)).thenReturn(Optional.empty());
+        when(fineCalculator.isBillable(5)).thenReturn(true);
+        when(fineCalculator.calculate(5)).thenReturn(new java.math.BigDecimal("1.50"));
 
         loanService.returnLoan(1L, "lib@test.com");
 
+        // returnLoan() should defer entirely to FineCalculator's output rather
+        // than computing the amount itself — exact dollar-amount math for
+        // every day-count tier is covered separately in FineCalculatorTest.
         ArgumentCaptor<FineRecord> captor = ArgumentCaptor.forClass(FineRecord.class);
         verify(fineRepository).save(captor.capture());
         assertEquals(0, captor.getValue().getAmount().compareTo(new java.math.BigDecimal("1.50")));
