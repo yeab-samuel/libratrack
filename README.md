@@ -238,8 +238,24 @@ Then open `target/site/jacoco/index.html` in a browser. The project targets a mi
 
 ## Deployment
 
-Target platform: [Render.com](https://render.com). Deployment is pending at the time of writing — the live URL will be added here once the service is provisioned and verified.
+The application is live on [Render.com](https://render.com):
+
+| Component | URL |
+|---|---|
+| **Frontend (React/Vite)** | https://libratrack-ui.onrender.com |
+| **Backend API (Spring Boot)** | https://libratrack-1ua8.onrender.com |
+| **Swagger UI** | https://libratrack-1ua8.onrender.com/swagger-ui.html |
+| **Health check** | https://libratrack-1ua8.onrender.com/actuator/health |
+
+> **Note:** Both services run on Render's free tier and will spin down after 15 minutes of inactivity. The first request after a cold start may take 30–60 seconds to respond — this is expected behaviour, not a bug.
 
 ## AI Tool Disclosure
 
-GitHub Copilot and Claude (Anthropic) were used to assist with boilerplate generation and debugging throughout development. All code has been reviewed, understood, and can be explained by every group member.
+In accordance with the academic integrity policy for SECT-4221, the following AI tools were used during this project:
+
+| Tool | How it was used |
+|---|---|
+| **Claude (Anthropic)** | Debugging assistance, boilerplate generation for DTOs and test scaffolding, CSS/frontend styling suggestions, deployment troubleshooting (CORS, Render configuration) |
+| **GitHub Copilot** | Inline code completion suggestions within IntelliJ IDEA during development |
+
+All AI-generated or AI-suggested code was reviewed, understood, tested, and modified by group members before being committed. Every group member is able to explain any section of the codebase. No AI tool was used to generate test cases that the team did not understand, nor to write the PDF report narrative.
