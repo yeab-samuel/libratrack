@@ -1,6 +1,7 @@
 package com.libratrack.controller;
 
 import com.libratrack.dto.request.BookRatingRequest;
+import com.libratrack.dto.response.BookRatingDTO;
 import com.libratrack.dto.response.RatingSummaryDTO;
 import com.libratrack.entity.User;
 import com.libratrack.service.BookRatingService;
@@ -9,13 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 /**
  * Rating endpoints nested under /api/books/{bookId}.
  *
- * POST /api/books/{bookId}/ratings  — submit or update a rating (STUDENT/FACULTY)
- * GET  /api/books/{bookId}/ratings  — get average + count for a book (public)
- *                                     includes myRating if the caller is authenticated
+ * POST /api/books/{bookId}/ratings         — submit or update a rating + optional review
+ * GET  /api/books/{bookId}/ratings         — get average + count (+ myRating if authenticated)
+ * GET  /api/books/{bookId}/ratings/reviews — list individual text reviews, newest first
  */
 @RestController
 @RequestMapping("/api/books/{bookId}/ratings")
@@ -31,7 +33,7 @@ public class BookRatingController {
             @Valid @RequestBody BookRatingRequest req,
             Authentication auth) {
         User user = (User) auth.getPrincipal();
-        return bookRatingService.submitRating(bookId, req.stars(), user);
+        return bookRatingService.submitRating(bookId, req.stars(), req.reviewText(), user);
     }
 
     @GetMapping
@@ -39,7 +41,13 @@ public class BookRatingController {
             @PathVariable Long bookId,
             Authentication auth) {
         Long memberId = (auth != null && auth.getPrincipal() instanceof User u)
-            ? u.getId() : null;
+                ? u.getId() : null;
         return bookRatingService.getSummary(bookId, memberId);
+    }
+
+    /** Returns individual reviews with text — used by the book detail panel. */
+    @GetMapping("/reviews")
+    public List<BookRatingDTO> getReviews(@PathVariable Long bookId) {
+        return bookRatingService.getReviews(bookId);
     }
 }

@@ -8,16 +8,16 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * One star rating (1–5) per member per book.
+ * One star rating (1–5) per member per book, with an optional short review.
  * A rating can only be submitted after the member has returned the book
  * (enforced in BookRatingService, not here).
  * Re-rating the same book updates the existing row via upsert.
  */
 @Entity
 @Table(name = "book_ratings",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uq_rating_book_member",
-        columnNames = {"book_id", "member_id"}))
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_rating_book_member",
+                columnNames = {"book_id", "member_id"}))
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class BookRating {
 
@@ -35,6 +35,10 @@ public class BookRating {
     @Column(nullable = false)
     @Min(1) @Max(5)
     private Integer rating;
+
+    /** Optional short review text (max 500 chars). May be null. */
+    @Column(name = "review_text", length = 500)
+    private String reviewText;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

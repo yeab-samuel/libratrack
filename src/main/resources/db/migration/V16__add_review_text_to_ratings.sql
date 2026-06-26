@@ -1,0 +1,2 @@
+ALTER TABLE book_ratings
+    ADD COLUMN IF NOT EXISTS review_text VARCHAR(500);

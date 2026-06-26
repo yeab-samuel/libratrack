@@ -54,7 +54,7 @@ class BookRatingServiceTest {
     void submitRating_MemberHasNotReturnedBook_ThrowsIllegalStateException() {
         when(loanRepository.hasReturnedBook(1L, 1L, LoanStatus.RETURNED)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> service.submitRating(1L, 5, member));
+        assertThrows(IllegalStateException.class, () -> service.submitRating(1L, 5, null, member));
         verifyNoInteractions(bookRepository);
     }
 
@@ -63,7 +63,7 @@ class BookRatingServiceTest {
         when(loanRepository.hasReturnedBook(1L, 1L, LoanStatus.RETURNED)).thenReturn(true);
         when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.submitRating(1L, 5, member));
+        assertThrows(ResourceNotFoundException.class, () -> service.submitRating(1L, 5, null, member));
     }
 
     @Test
@@ -79,7 +79,7 @@ class BookRatingServiceTest {
         List<BookRatingRepository.RatingStats> stats = List.of(statsOf(5.0, 1L));
         when(bookRatingRepository.findStatsByBookIds(List.of(1L))).thenReturn(stats);
 
-        RatingSummaryDTO result = service.submitRating(1L, 5, member);
+        RatingSummaryDTO result = service.submitRating(1L, 5, null, member);
 
         ArgumentCaptor<BookRating> captor = ArgumentCaptor.forClass(BookRating.class);
         verify(bookRatingRepository).save(captor.capture());
@@ -101,7 +101,7 @@ class BookRatingServiceTest {
         List<BookRatingRepository.RatingStats> stats = List.of(statsOf(4.0, 1L));
         when(bookRatingRepository.findStatsByBookIds(List.of(1L))).thenReturn(stats);
 
-        service.submitRating(1L, 4, member);
+        service.submitRating(1L, 4, null, member);
 
         ArgumentCaptor<BookRating> captor = ArgumentCaptor.forClass(BookRating.class);
         verify(bookRatingRepository).save(captor.capture());

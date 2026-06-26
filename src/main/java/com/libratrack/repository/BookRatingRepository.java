@@ -16,8 +16,14 @@ public interface BookRatingRepository extends JpaRepository<BookRating, Long> {
      * Used by BookService to enrich page results without N+1 queries.
      */
     @Query("SELECT r.book.id AS bookId, AVG(r.rating) AS average, COUNT(r) AS count " +
-           "FROM BookRating r WHERE r.book.id IN :bookIds GROUP BY r.book.id")
+            "FROM BookRating r WHERE r.book.id IN :bookIds GROUP BY r.book.id")
     List<RatingStats> findStatsByBookIds(@Param("bookIds") List<Long> bookIds);
+
+    /**
+     * All ratings for a single book, newest first.
+     * Used by the book detail endpoint to list individual reviews.
+     */
+    List<BookRating> findByBookIdOrderByCreatedAtDesc(Long bookId);
 
     /** Projection returned by findStatsByBookIds. */
     interface RatingStats {
