@@ -10,8 +10,19 @@ async function api(path, opts = {}, token = null) {
   const res = await fetch(BASE + path, { ...opts, headers });
   if (res.status === 204) return null;
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.message || body.error || `Error ${res.status}`);
+  if (!res.ok) throw new Error(extractErrorMessage(body, res.status));
   return body;
+}
+
+function extractErrorMessage(body, status) {
+  if (body?.message) return body.message;
+  if (body?.error)   return body.error;
+  if (body && typeof body === "object") {
+    const fieldErrors = Object.entries(body).filter(([, v]) => typeof v === "string");
+    if (fieldErrors.length > 0)
+      return fieldErrors.map(([field, reason]) => `${field}: ${reason}`).join("; ");
+  }
+  return `Error ${status}`;
 }
 
 /* ─── GLOBAL STYLES ──────────────────────────────────────── */
@@ -23,14 +34,135 @@ const CSS = `
   --border: #DDD9D2; --ok: #2C6E49; --bad: #9B2226; --warn: #8E6000;
   --info: #144272; --sw: 228px;
 }
+html[data-theme="dark"] {
+  /* ── Mirror the light mode logic, just inverted ──────────
+     Light: near-black ink (#0E0D0B) on near-white paper (#F8F6F2)
+     Dark:  near-white ink on near-black paper — same muted accent    */
+  --ink:    #E2DED7;   /* mirrors --paper from light mode              */
+  --paper:  #111110;   /* mirrors --ink from light mode                */
+  --accent: #A04E1F;   /* same terracotta as light — no saturation bump */
+  --muted:  #6B6865;   /* desaturated mid-gray                         */
+  --border: #2A2826;   /* barely there — same role as #DDD9D2 in light */
+  --ok:     #3A8A58;
+  --bad:    #AA3232;
+  --warn:   #926300;
+  --info:   #1A5688;
+}
+
+/* ── Three depth layers ───────────────────────────────────
+   Layer 0  #111110  page background   (--paper)
+   Layer 1  #181716  sidebar, cards    — just barely lifted
+   Layer 2  #1F1E1C  dialogs           — clearly elevated   ── */
+html[data-theme="dark"] .sidebar  { background: #181716; border-right-color: #2A2826; }
+html[data-theme="dark"] .dialog   { background: #1F1E1C; border-color: #3C3A37; }
+html[data-theme="dark"] .overlay  { background: rgba(5,4,4,.88); }
+
+/* ── Book cards ── */
+html[data-theme="dark"] .books-grid { background: #2A2826; border-color: #2A2826; }
+html[data-theme="dark"] .book-card  { background: #181716; border-color: #2A2826; }
+html[data-theme="dark"] .book-card:hover { background: #1D1C1A; }
+html[data-theme="dark"] .book-card-meta  { border-top-color: #2A2826; }
+
+/* ── Tables ── */
+html[data-theme="dark"] th          { border-bottom-color: #2A2826; }
+html[data-theme="dark"] td          { border-bottom-color: #1C1B19; }
+html[data-theme="dark"] tr:hover td { background: rgba(160,78,31,.06); }
+
+/* ── Inputs — neutral dark fill, same subtle border logic as light ── */
+html[data-theme="dark"] .field input,
+html[data-theme="dark"] .field select,
+html[data-theme="dark"] .field textarea {
+  background: #161514;
+  color: #E2DED7;
+  border-color: #2A2826;
+}
+html[data-theme="dark"] .field input:focus,
+html[data-theme="dark"] .field select:focus,
+html[data-theme="dark"] .field textarea:focus { border-color: #E2DED7; }
+
+/* ── Buttons — desaturated, matching the light mode's restraint ── */
+html[data-theme="dark"] .btn {
+  background: #1E1D1B;
+  border-color: #3C3A37;
+  color: #E2DED7;
+}
+html[data-theme="dark"] .btn:hover:not(:disabled) {
+  background: #A04E1F;
+  border-color: #A04E1F;
+  color: #111110;
+}
+html[data-theme="dark"] .btn-ghost {
+  background: transparent;
+  border-color: #2A2826;
+  color: #6B6865;
+}
+html[data-theme="dark"] .btn-ghost:hover:not(:disabled) {
+  background: #1E1D1B;
+  border-color: #3C3A37;
+  color: #E2DED7;
+}
+
+/* ── Inline messages ── */
+html[data-theme="dark"] .msg-err { background: #200F0F; border-color: #AA3232; }
+html[data-theme="dark"] .msg-ok  { background: #0C1A11; border-color: #3A8A58; }
+
+/* ── Miscellaneous ── */
+html[data-theme="dark"] .welcome-toast      { background: rgba(42,95,62,.96); }
+html[data-theme="dark"] .theme-btn-icon     { background: #181716; border-color: #2A2826; }
+html[data-theme="dark"] .nav-section-label  { color: #3C3A37; }
+html[data-theme="dark"] .page-head          { border-bottom-color: #2A2826; }
+html[data-theme="dark"] .sidebar-foot       { border-top-color: #2A2826; }
+html[data-theme="dark"] .stats-grid         { background: #2A2826; border-color: #2A2826; }
+html[data-theme="dark"] .stat-cell          { background: #181716; }
+html[data-theme="dark"] .detail-section-label { border-bottom-color: #2A2826; }
+html[data-theme="dark"] .review-item        { border-left-color: #2A2826; }
 html { font-size: 16px; }
 body { min-height: 100vh; background: var(--paper); color: var(--ink); font-family: 'EB Garamond', Georgia, serif; -webkit-font-smoothing: antialiased; }
 #root { min-height: 100vh; }
+
+/* ── Theme toggle (compact icon square) ── */
+.theme-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .85rem;
+  line-height: 1;
+  border-radius: 0;
+  transition: border-color .15s, color .15s, background .15s;
+  flex-shrink: 0;
+}
+.theme-btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Fixed toggle for auth pages (top-right corner) */
+.auth-theme-btn {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 200;
+}
+
+/* ── Auth shell ── */
 .auth-shell { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3rem 2rem 4rem; overflow-y: auto; }
 .auth-card { width: 100%; max-width: 400px; animation: fadeUp .35s ease both; }
 .auth-wordmark { font-size: .8rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 3rem; display: flex; align-items: baseline; gap: .35rem; }
 .auth-wordmark em { color: var(--accent); font-style: normal; }
-.auth-heading { font-size: 2rem; font-weight: 400; line-height: 1.15; margin-bottom: 2rem; }
+
+/* ── Auth heading — explicit color + font so light mode is never invisible ── */
+.auth-heading {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 2rem;
+  color: var(--ink);
+}
+
 .field { margin-bottom: 1.1rem; }
 .field label { display: block; font-family: 'DM Mono', monospace; font-size: .63rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--border); background: var(--paper); color: var(--ink); font-family: 'EB Garamond', serif; font-size: 1rem; padding: .55rem .75rem; outline: none; border-radius: 0; appearance: none; -webkit-appearance: none; transition: border-color .15s; }
@@ -55,9 +187,20 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .msg-err { color: var(--bad); border-color: var(--bad); background: #fdf3f3; }
 .msg-ok  { color: var(--ok);  border-color: var(--ok);  background: #f0faf4; }
 .app { display: flex; min-height: 100vh; overflow-x: hidden; }
+
+/* ── Sidebar ── */
 .sidebar { width: var(--sw); min-height: 100vh; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.5rem; position: fixed; top: 0; left: 0; bottom: 0; background: var(--paper); z-index: 20; overflow-y: auto; }
-.sidebar-wm { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 2.5rem; line-height: 1.5; }
+
+/* Wordmark row: brand name left, theme toggle right */
+.sidebar-wm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+.sidebar-wm { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; line-height: 1.5; }
 .sidebar-wm em { color: var(--accent); font-style: normal; }
+
 .nav-section-label { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--border); margin: 1.25rem 0 .4rem; }
 .nav-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'EB Garamond', serif; font-size: .975rem; color: var(--muted); padding: .35rem 0; transition: color .12s; letter-spacing: .01em; }
 .nav-btn:hover { color: var(--ink); }
@@ -67,9 +210,20 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .user-chip { font-family: 'DM Mono', monospace; font-size: .62rem; letter-spacing: .04em; color: var(--muted); line-height: 1.7; margin-bottom: .7rem; word-break: break-all; }
 .user-chip strong { display: block; color: var(--ink); font-weight: 400; font-size: .7rem; }
 .user-chip .uid { display: block; color: var(--accent); font-size: .68rem; letter-spacing: .06em; }
+
+/* ── Main content ── */
 .main { margin-left: var(--sw); flex: 1; padding: 2.5rem 3rem; width: calc(100vw - var(--sw)); max-width: 1040px; min-width: 0; overflow-x: hidden; animation: fadeUp .3s ease both; }
 .page-head { margin-bottom: 1.75rem; padding-bottom: .9rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.page-title { font-size: 1.8rem; font-weight: 400; letter-spacing: -.01em; }
+
+/* ── Page title — explicit color + font for consistent rendering across themes ── */
+.page-title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
+
 .page-sub { font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); flex: 1; padding-left: 1rem; }
 .filter-row { display: flex; gap: .65rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.5rem; }
 .filter-row .field { margin: 0; min-width: 140px; flex: 1; }
@@ -92,8 +246,8 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .empty { text-align: center; padding: 5rem 2rem; color: var(--muted); font-style: italic; font-size: 1.15rem; }
 .loading { text-align: center; padding: 4rem 2rem; font-family: 'DM Mono', monospace; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--border); animation: pulse 1.4s infinite; }
 .overlay { position: fixed; inset: 0; background: rgba(14,13,11,.45); display: grid; place-items: center; z-index: 200; padding: 1rem; animation: fadeIn .18s ease; overflow-y: auto; }
-.dialog { background: var(--paper); border: 1px solid var(--border); padding: 2rem; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; animation: fadeUp .22s ease; }
-.dialog-title { font-size: 1.3rem; font-weight: 400; margin-bottom: 1.5rem; }
+.dialog { background: var(--paper); border: 1px solid var(--border); padding: 2rem; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; animation: fadeUp .22s ease; }
+.dialog-title { font-size: 1.3rem; font-weight: 400; margin-bottom: 1.5rem; font-family: 'EB Garamond', Georgia, serif; color: var(--ink); }
 .dialog-actions { display: flex; gap: .65rem; margin-top: 1.5rem; justify-content: flex-end; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 2rem; }
 .stat-cell { background: var(--paper); padding: 1.25rem 1.5rem; }
@@ -104,8 +258,9 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .book-card:hover { background: rgba(160,78,31,.025); }
 .book-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
 .book-card-year { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted); white-space: nowrap; padding-top: .1rem; }
-.book-card-title { font-size: 1.15rem; font-weight: 500; line-height: 1.3; color: var(--ink); letter-spacing: -.01em; }
-.book-card-author { font-size: .9rem; color: var(--muted); font-style: italic; }
+.book-card-title { font-size: 1.15rem; font-weight: 500; line-height: 1.3; color: var(--ink); letter-spacing: -.01em; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--border); font-family: 'EB Garamond', Georgia, serif; }
+.book-card-title:hover { color: var(--accent); }
+.book-card-author { font-size: .9rem; color: var(--muted); font-style: italic; font-family: 'EB Garamond', Georgia, serif; }
 .book-card-isbn { font-family: 'DM Mono', monospace; font-size: .62rem; color: var(--border); letter-spacing: .04em; }
 .book-card-meta { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--border); }
 .book-card-copies { font-family: 'DM Mono', monospace; font-size: .62rem; color: var(--muted); letter-spacing: .04em; margin-left: auto; }
@@ -123,6 +278,12 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .td-rating { display:flex; flex-direction:column; gap:.15rem; align-items:flex-start; }
 .rating-hint { font-size:.65rem; color:var(--muted); }
 .priority-badge { font-family: 'DM Mono', monospace; font-size: .55rem; letter-spacing: .06em; padding: .12rem .35rem; border: 1px solid var(--warn); color: var(--warn); text-transform: uppercase; display: inline-block; }
+.review-item { border-left: 2px solid var(--border); padding-left: .75rem; margin-bottom: .85rem; }
+.review-meta { display: flex; align-items: center; gap: .5rem; margin-bottom: .2rem; flex-wrap: wrap; }
+.review-author { font-family: 'DM Mono', monospace; font-size: .62rem; color: var(--muted); }
+.review-date { font-family: 'DM Mono', monospace; font-size: .58rem; color: var(--border); }
+.review-text { font-size: .95rem; line-height: 1.6; font-family: 'EB Garamond', Georgia, serif; }
+.detail-section-label { font-family: 'DM Mono', monospace; font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: .65rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
 .welcome-toast {
   position: fixed; top: 1.25rem; left: 50%; transform: translateX(-50%);
   z-index: 999; background: rgba(44,110,73,0.93); color: white;
@@ -140,11 +301,14 @@ tr:hover td { background: rgba(160,78,31,.03); }
 const fmt   = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : "—";
 const money = (n) => n != null ? `$${Number(n).toFixed(2)}` : "—";
 
-/**
- * Spring Data with @EnableSpringDataWebSupport(VIA_DTO) wraps page metadata
- * under a "page" key: { content:[...], page:{ number, totalPages, totalElements } }
- * This helper reads either format safely.
- */
+const daysUntil = (dateStr, now) => {
+  if (!dateStr) return null;
+  const target = new Date(dateStr + "T00:00:00");
+  const todayMidnight  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  return Math.round((targetMidnight - todayMidnight) / 86400000);
+};
+
 const parsePage = (data) => {
   const p = data.page ?? data;
   return {
@@ -165,6 +329,27 @@ function Badge({ status }) {
     LAW:"b-law", MEDICINE:"b-medicine", OTHER:"b-other",
   }[status] || "b-returned";
   return <span className={`badge ${cls}`}>{status?.replace(/_/g," ")}</span>;
+}
+
+function Countdown({ days, kind = "due" }) {
+  if (days == null) return <span className="mono" style={{ fontSize:".75rem", color:"var(--muted)" }}>—</span>;
+  const isCollect = kind === "collect";
+  let label, color, bold;
+  if (days < 0) {
+    label = isCollect ? "Expired" : `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
+    color = "var(--bad)"; bold = true;
+  } else if (days === 0) {
+    label = isCollect ? "Collect today" : "Due today";
+    color = "var(--warn)"; bold = true;
+  } else if (days === 1) {
+    label = isCollect ? "1 day to collect" : "1 day left";
+    color = "var(--warn)"; bold = true;
+  } else {
+    label = `${days} days left`;
+    color = (isCollect || days <= 2) ? "var(--warn)" : "var(--ok)";
+    bold = false;
+  }
+  return <span className="mono" style={{ fontSize:".75rem", fontWeight: bold ? 600 : 500, color }}>{label}</span>;
 }
 
 function Pager({ page, totalPages, onPage }) {
@@ -189,8 +374,27 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+/* ─── STAR RATING ─────────────────────────────────────────── */
+function StarRating({ value, onChange, readonly }) {
+  const [hover, setHover] = useState(0);
+  const effective = hover || value || 0;
+  return (
+    <span className="stars">
+      {[1,2,3,4,5].map(n => (
+        <span key={n}
+          className={`star${effective >= n ? " filled" : ""}${readonly ? " readonly" : ""}`}
+          onClick={() => !readonly && onChange?.(n)}
+          onMouseEnter={() => !readonly && setHover(n)}
+          onMouseLeave={() => !readonly && setHover(0)}
+          title={readonly ? `${value} out of 5` : `Rate ${n} star${n > 1 ? "s" : ""}`}
+        >★</span>
+      ))}
+    </span>
+  );
+}
+
 /* ─── LOGIN ───────────────────────────────────────────────── */
-function LoginPage({ onLogin, onRegister, successMessage }) {
+function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }) {
   const [form, setForm]       = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [err, setErr]         = useState("");
@@ -214,47 +418,42 @@ function LoginPage({ onLogin, onRegister, successMessage }) {
 
   return (
     <div className="auth-shell">
+      {/* Theme toggle — fixed top-right, visible on auth pages */}
+      <button
+        className="theme-btn-icon auth-theme-btn"
+        onClick={onToggleTheme}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        aria-label="Toggle theme"
+      >
+        {theme === "dark" ? "☀" : "☾"}
+      </button>
+
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Sign in to<br/>your account</h1>
-
         {successMessage && <div className="msg msg-ok" style={{ marginBottom: "1.25rem" }}>{successMessage}</div>}
-
         <form onSubmit={handle}>
           <div className="field">
             <label>University ID</label>
-            <input
-              type="text"
-              autoFocus
-              autoComplete="username"
+            <input type="text" autoFocus autoComplete="username"
               placeholder="e.g. UGR/9305/23 · FAC/1234/20 · LIB/0042/19"
               value={form.identifier}
               onChange={e => setForm(f => ({ ...f, identifier: e.target.value.toUpperCase() }))}
-              required
-            />
+              required />
             <div className="field-hint">Format: TYPE/SERIAL/YEAR — use the ID assigned by your institution</div>
           </div>
           <div className="field">
             <label>Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
+            <input type="password" autoComplete="current-password"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              required
-            />
+              required />
           </div>
-          <button
-            className="btn"
-            style={{ width: "100%", justifyContent: "center", marginTop: ".5rem" }}
-            disabled={loading}
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
+          <button className="btn" style={{ width:"100%", justifyContent:"center", marginTop:".5rem" }}
+            disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button>
           {err && <div className="msg msg-err">{err}</div>}
         </form>
-
-        <p style={{ marginTop: "1.5rem", fontSize: ".9rem", color: "var(--muted)" }}>
+        <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           No account? <button className="link-action" onClick={onRegister}>Register here</button>
         </p>
       </div>
@@ -263,19 +462,15 @@ function LoginPage({ onLogin, onRegister, successMessage }) {
 }
 
 /* ─── REGISTER ────────────────────────────────────────────── */
-// FIX 2: Replaced local `ok` state + success screen with `onSuccess(msg)` callback.
-//         After successful registration the root component switches back to login
-//         and passes a success message that LoginPage displays above the form.
-function RegisterPage({ onBack, onSuccess }) {
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "STUDENT", universityId: "" });
+function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
+  const [form, setForm] = useState({ fullName:"", email:"", password:"", role:"STUDENT", universityId:"" });
   const [loading, setLoading] = useState(false);
   const [err, setErr]   = useState("");
 
   const handle = async (e) => {
     e.preventDefault(); setErr(""); setLoading(true);
     try {
-      await api("/api/auth/register", { method: "POST", body: JSON.stringify(form) });
-      // Delegate success handling to the root — no local ok-screen anymore.
+      await api("/api/auth/register", { method:"POST", body: JSON.stringify(form) });
       onSuccess("Account created successfully. Please sign in.");
     } catch(e) { setErr(e.message); }
     finally { setLoading(false); }
@@ -283,10 +478,19 @@ function RegisterPage({ onBack, onSuccess }) {
 
   return (
     <div className="auth-shell">
+      {/* Theme toggle — fixed top-right, visible on auth pages */}
+      <button
+        className="theme-btn-icon auth-theme-btn"
+        onClick={onToggleTheme}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        aria-label="Toggle theme"
+      >
+        {theme === "dark" ? "☀" : "☾"}
+      </button>
+
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Create<br/>an account</h1>
-
         <form onSubmit={handle}>
           <div className="field">
             <label>Full Name</label>
@@ -294,14 +498,12 @@ function RegisterPage({ onBack, onSuccess }) {
           </div>
           <div className="field">
             <label>University ID</label>
-            <input
-              value={form.universityId}
+            <input value={form.universityId}
               onChange={e => setForm(f => ({ ...f, universityId: e.target.value.toUpperCase() }))}
               placeholder="e.g. ATE/9305/14"
               pattern="^[A-Z]{2,5}/\d{3,6}/\d{2}$"
               title="Format: DEPT/SERIAL/YEAR e.g. ATE/9305/14"
-              required
-            />
+              required />
             <div className="field-hint">Format: DEPT/SERIAL/YEAR — must match campus registry</div>
           </div>
           <div className="field">
@@ -320,17 +522,11 @@ function RegisterPage({ onBack, onSuccess }) {
             <label>Password (min 8 chars)</label>
             <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required minLength={8} />
           </div>
-          <button
-            className="btn"
-            style={{ width: "100%", justifyContent: "center", marginTop: ".5rem" }}
-            disabled={loading}
-          >
-            {loading ? "Creating…" : "Create account"}
-          </button>
+          <button className="btn" style={{ width:"100%", justifyContent:"center", marginTop:".5rem" }}
+            disabled={loading}>{loading ? "Creating…" : "Create account"}</button>
           {err && <div className="msg msg-err">{err}</div>}
         </form>
-
-        <p style={{ marginTop: "1.5rem", fontSize: ".9rem", color: "var(--muted)" }}>
+        <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           Have an account? <button className="link-action" onClick={onBack}>Sign in</button>
         </p>
       </div>
@@ -338,30 +534,105 @@ function RegisterPage({ onBack, onSuccess }) {
   );
 }
 
-/* ─── BOOK CARD ───────────────────────────────────────────── */
-function StarRating({ value, onChange, readonly }) {
-  const [hover, setHover] = React.useState(0);
-  const effective = hover || value || 0;
+/* ─── BOOK DETAIL MODAL ───────────────────────────────────── */
+function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
+  const [reviews, setReviews]   = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
+  useEffect(() => {
+    api(`/api/books/${book.id}/ratings/reviews`, {}, token)
+      .then(r => setReviews(Array.isArray(r) ? r : []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoadingReviews(false));
+  }, [book.id, token]);
+
+  const available    = book.availableCopies ?? 0;
+  const hasAvailable = available > 0;
+  const isMember     = ["STUDENT","FACULTY"].includes(role);
+
   return (
-    <span className="stars">
-      {[1,2,3,4,5].map(n => (
-        <span key={n}
-          className={`star${effective >= n ? " filled" : ""}${readonly ? " readonly" : ""}`}
-          onClick={() => !readonly && onChange?.(n)}
-          onMouseEnter={() => !readonly && setHover(n)}
-          onMouseLeave={() => !readonly && setHover(0)}
-          title={readonly ? `${value} out of 5` : `Rate ${n} star${n > 1 ? "s" : ""}`}
-        >★</span>
-      ))}
-    </span>
+    <Modal title={book.title} onClose={onClose}>
+      <p style={{ fontStyle:"italic", color:"var(--muted)", marginBottom:".65rem", fontSize:"1rem" }}>
+        {book.author}
+      </p>
+
+      <div style={{ display:"flex", gap:".55rem", flexWrap:"wrap", marginBottom:"1rem", alignItems:"center" }}>
+        <Badge status={book.category} />
+        {book.publishedYear && (
+          <span className="mono" style={{ fontSize:".68rem", color:"var(--muted)" }}>{book.publishedYear}</span>
+        )}
+        {book.publisher && (
+          <span style={{ fontSize:".8rem", color:"var(--muted)" }}>{book.publisher}</span>
+        )}
+        {book.isbn && (
+          <span className="mono" style={{ fontSize:".62rem", color:"var(--border)" }}>{book.isbn}</span>
+        )}
+      </div>
+
+      {book.description ? (
+        <p style={{ fontSize:".95rem", lineHeight:1.75, marginBottom:"1.25rem", color:"var(--ink)", fontFamily:"'EB Garamond', Georgia, serif" }}>
+          {book.description}
+        </p>
+      ) : (
+        <p style={{ fontSize:".88rem", color:"var(--muted)", fontStyle:"italic", marginBottom:"1.25rem" }}>
+          No description available.
+        </p>
+      )}
+
+      <div style={{ display:"flex", alignItems:"center", gap:".65rem", marginBottom:"1.25rem", flexWrap:"wrap" }}>
+        <span className={`book-avail-dot ${hasAvailable ? "" : "none"}`} />
+        <span className={`book-card-copies ${hasAvailable ? "available" : ""}`} style={{ fontSize:".75rem" }}>
+          {hasAvailable ? `${available} cop${available === 1 ? "y" : "ies"} available` : "all copies on loan"}
+        </span>
+        {book.ratingCount > 0 && (
+          <>
+            <StarRating value={Math.round(book.averageRating)} readonly />
+            <span className="mono" style={{ fontSize:".65rem", color:"var(--muted)" }}>
+              {Number(book.averageRating).toFixed(1)} ({book.ratingCount} rating{book.ratingCount !== 1 ? "s" : ""})
+            </span>
+          </>
+        )}
+      </div>
+
+      {!loadingReviews && reviews.length > 0 && (
+        <div style={{ marginBottom:"1.25rem" }}>
+          <div className="detail-section-label">Reader Reviews</div>
+          {reviews.slice(0, 5).map((r, i) => (
+            <div key={i} className="review-item">
+              <div className="review-meta">
+                <StarRating value={r.stars} readonly />
+                <span className="review-author">{r.reviewerName}</span>
+                <span className="review-date">{fmt(r.createdAt)}</span>
+              </div>
+              <p className="review-text">{r.reviewText}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loadingReviews && reviews.length === 0 && book.ratingCount > 0 && (
+        <p style={{ fontSize:".85rem", color:"var(--muted)", fontStyle:"italic", marginBottom:"1.25rem" }}>
+          Readers have rated this book but no written reviews yet.
+        </p>
+      )}
+
+      <div className="dialog-actions">
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        {isMember && (hasAvailable
+          ? <button className="btn btn-borrow btn-sm" onClick={() => { onClose(); onBorrow(book); }}>Borrow</button>
+          : <button className="btn btn-sm"            onClick={() => { onClose(); onReserve(book); }}>Reserve</button>
+        )}
+      </div>
+    </Modal>
   );
 }
 
-function BookCard({ book, role, onBorrow, onReserve }) {
-  const copies     = book.totalCopies ?? 0;
-  const hasAvailable = copies > 0;
-  const isMember   = ["STUDENT","FACULTY"].includes(role);
-  const isFaculty  = role === "FACULTY";
+/* ─── BOOK CARD ───────────────────────────────────────────── */
+function BookCard({ book, role, onBorrow, onReserve, onDetail }) {
+  const available    = book.availableCopies ?? 0;
+  const hasAvailable = available > 0;
+  const isMember  = ["STUDENT","FACULTY"].includes(role);
+  const isFaculty = role === "FACULTY";
 
   return (
     <div className="book-card">
@@ -370,14 +641,16 @@ function BookCard({ book, role, onBorrow, onReserve }) {
         <span className="book-card-year">{book.publishedYear || "—"}</span>
       </div>
       <div>
-        <div className="book-card-title">{book.title}</div>
+        <div className="book-card-title" onClick={() => onDetail(book)} title="Click to view details">
+          {book.title}
+        </div>
         <div className="book-card-author">{book.author}</div>
       </div>
       {book.isbn && <div className="book-card-isbn">{book.isbn}</div>}
       <div className="book-card-meta">
         <span className={`book-avail-dot ${hasAvailable ? "" : "none"}`} />
         <span className={`book-card-copies ${hasAvailable ? "available" : ""}`}>
-          {hasAvailable ? `${copies} cop${copies === 1 ? "y" : "ies"} available` : "all copies on loan"}
+          {hasAvailable ? `${available} cop${available === 1 ? "y" : "ies"} available` : "all copies on loan"}
         </span>
         {isFaculty && <span className="priority-badge">Priority</span>}
       </div>
@@ -390,11 +663,10 @@ function BookCard({ book, role, onBorrow, onReserve }) {
       )}
       {isMember && (
         <div className="book-card-actions">
-          {hasAvailable ? (
-            <button className="btn btn-borrow btn-sm" onClick={() => onBorrow(book)}>Borrow</button>
-          ) : (
-            <button className="btn btn-ghost btn-sm" onClick={() => onReserve(book)}>Reserve</button>
-          )}
+          {hasAvailable
+            ? <button className="btn btn-borrow btn-sm" onClick={() => onBorrow(book)}>Borrow</button>
+            : <button className="btn btn-ghost btn-sm"  onClick={() => onReserve(book)}>Reserve</button>
+          }
         </div>
       )}
     </div>
@@ -404,9 +676,18 @@ function BookCard({ book, role, onBorrow, onReserve }) {
 /* ─── BORROW MODAL ────────────────────────────────────────── */
 function BorrowModal({ book, token, role, onClose, onDone }) {
   const today = new Date();
+  const maxDays = role === "FACULTY" ? 30 : 14;
   const defaultDue = new Date(today);
-  defaultDue.setDate(defaultDue.getDate() + (role === "FACULTY" ? 30 : 14));
+  defaultDue.setDate(defaultDue.getDate() + maxDays);
   const defaultDueStr = defaultDue.toISOString().split("T")[0];
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDueStr = tomorrow.toISOString().split("T")[0];
+
+  const maxDue = new Date(today);
+  maxDue.setDate(maxDue.getDate() + maxDays);
+  const maxDueStr = maxDue.toISOString().split("T")[0];
 
   const [copyId, setCopyId] = useState("");
   const [dueDate, setDueDate] = useState(defaultDueStr);
@@ -423,14 +704,14 @@ function BorrowModal({ book, token, role, onClose, onDone }) {
   const submit = async (e) => {
     e.preventDefault(); setErr(""); setLoading(true);
     try {
-      await api("/api/loans/borrow", { method: "POST", body: JSON.stringify({ bookCopyId: Number(copyId), dueDate }) }, token);
+      await api("/api/loans/borrow", { method:"POST", body: JSON.stringify({ bookCopyId: Number(copyId), dueDate }) }, token);
       onDone(`"${book.title}" borrowed successfully. Due: ${fmt(dueDate)}`);
     } catch(e) { setErr(e.message); setLoading(false); }
   };
 
   return (
     <Modal title={`Borrow: ${book.title}`} onClose={onClose}>
-      <p style={{ fontSize: ".9rem", color: "var(--muted)", marginBottom: "1.25rem", lineHeight: 1.5 }}>
+      <p style={{ fontSize:".9rem", color:"var(--muted)", marginBottom:"1.25rem", lineHeight:1.5 }}>
         {book.author} · {role === "FACULTY" ? "Faculty — up to 30 days, extendable" : "Student — up to 14 days"}
       </p>
       <form onSubmit={submit}>
@@ -443,7 +724,7 @@ function BorrowModal({ book, token, role, onClose, onDone }) {
         </div>
         <div className="field">
           <label>Due date</label>
-          <input type="date" required value={dueDate} min={new Date().toISOString().split("T")[0]} onChange={e => setDueDate(e.target.value)} />
+          <input type="date" required value={dueDate} min={minDueStr} max={maxDueStr} onChange={e => setDueDate(e.target.value)} />
         </div>
         {err && <div className="msg msg-err">{err}</div>}
         <div className="dialog-actions">
@@ -470,11 +751,11 @@ function BooksPage({ auth }) {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page, size: 18 });
-      if (filters.title)     params.set("title", filters.title);
-      if (filters.author)    params.set("author", filters.author);
-      if (filters.category)    params.set("category", filters.category);
+      if (filters.title)         params.set("title", filters.title);
+      if (filters.author)        params.set("author", filters.author);
+      if (filters.category)      params.set("category", filters.category);
       if (filters.publishedYear) params.set("publishedYear", filters.publishedYear);
-      if (filters.available)    params.set("available", filters.available);
+      if (filters.available)     params.set("available", filters.available);
       const data = await api(`/api/books/search?${params}`, {}, token);
       setRows(data.content);
       setPg(parsePage(data));
@@ -488,7 +769,7 @@ function BooksPage({ auth }) {
     try {
       await api("/api/reservations", { method:"POST", body: JSON.stringify({ bookId: book.id }) }, token);
       setModal(null);
-      setMsg({ type:"ok", text: `Reservation placed for "${book.title}". You'll be notified when a copy is available.` });
+      setMsg({ type:"ok", text:`Reservation placed for "${book.title}". You'll be notified when a copy is available.` });
     } catch(e) { setMsg({ type:"err", text: e.message }); setModal(null); }
   };
 
@@ -534,10 +815,10 @@ function BooksPage({ auth }) {
           {rows.length === 0 ? <div className="empty">No books found.</div> : (
             <div className="books-grid">
               {rows.map(b => (
-                <BookCard
-                  key={b.id} book={b} role={role}
+                <BookCard key={b.id} book={b} role={role}
                   onBorrow={(book) => setModal({ type:"borrow", book })}
                   onReserve={(book) => setModal({ type:"reserve", book })}
+                  onDetail={(book) => setModal({ type:"detail", book })}
                 />
               ))}
             </div>
@@ -570,6 +851,14 @@ function BooksPage({ auth }) {
             <button className="btn btn-sm" onClick={() => reserve(modal.book)}>Confirm reservation</button>
           </div>
         </Modal>
+      )}
+      {modal?.type === "detail" && (
+        <BookDetailModal
+          book={modal.book} token={token} role={role}
+          onClose={() => setModal(null)}
+          onBorrow={(book) => setModal({ type:"borrow", book })}
+          onReserve={(book) => setModal({ type:"reserve", book })}
+        />
       )}
     </div>
   );
@@ -608,31 +897,82 @@ function CreateBookModal({ onSubmit, onClose, categories }) {
   );
 }
 
+/* ─── REVIEW INPUT (for returned loans) ──────────────────── */
+function ReviewInput({ bookId, token }) {
+  const [stars, setStars]     = useState(0);
+  const [text, setText]       = useState("");
+  const [saved, setSaved]     = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr]         = useState("");
+
+  const submit = async () => {
+    if (!stars) return;
+    setLoading(true); setErr("");
+    try {
+      await api(`/api/books/${bookId}/ratings`, {
+        method: "POST",
+        body: JSON.stringify({ stars, reviewText: text.trim() || null }),
+      }, token);
+      setSaved(true);
+    } catch(e) { setErr(e.message); }
+    finally { setLoading(false); }
+  };
+
+  if (saved) return (
+    <div className="td-rating">
+      <StarRating value={stars} readonly />
+      <span className="rating-hint">✓ Review submitted</span>
+    </div>
+  );
+
+  return (
+    <div className="td-rating">
+      <StarRating value={stars} onChange={s => setStars(s)} />
+      {stars > 0 && (
+        <>
+          <textarea
+            placeholder="Write a short review… (optional)"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            maxLength={500}
+            rows={2}
+            style={{
+              width:"160px", marginTop:".3rem", padding:".3rem .5rem",
+              fontSize:".8rem", fontFamily:"'EB Garamond',serif",
+              border:"1px solid var(--border)",
+              background:"var(--paper)", color:"var(--ink)", resize:"vertical",
+            }}
+          />
+          {err && <span style={{ fontSize:".62rem", color:"var(--bad)" }}>{err}</span>}
+          <button className="btn btn-sm" style={{ marginTop:".25rem" }}
+            disabled={loading} onClick={submit}>
+            {loading ? "…" : "Submit"}
+          </button>
+        </>
+      )}
+      {!stars && <span className="rating-hint">Rate this book</span>}
+    </div>
+  );
+}
+
 /* ─── LOANS PAGE ──────────────────────────────────────────── */
 function LoansPage({ auth }) {
   const { token, role } = auth;
   const isMember  = ["STUDENT","FACULTY"].includes(role);
   const isFaculty = role === "FACULTY";
   const endpoint  = isMember ? "/api/loans/mine" : "/api/loans";
-  const [rows, setRows]         = useState([]);
-  const [pg, setPg]             = useState({ number:0, totalPages:0, totalElements:0 });
-  const [loading, setLoading]   = useState(false);
+  const [rows, setRows]       = useState([]);
+  const [pg, setPg]           = useState({ number:0, totalPages:0, totalElements:0 });
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
-  const [modal, setModal]       = useState(null);
-  const [msg, setMsg]           = useState(null);
-  const [ratings, setRatings]   = useState({});  // bookId → submitted star value
+  const [modal, setModal]     = useState(null);
+  const [msg, setMsg]         = useState(null);
+  const [now, setNow]         = useState(() => new Date());
 
-  const submitRating = async (bookId, stars) => {
-    try {
-      await api(`/api/books/${bookId}/ratings`, {
-        method: "POST",
-        body: JSON.stringify({ stars })
-      }, token);
-      setRatings(r => ({ ...r, [bookId]: stars }));
-    } catch(e) {
-      setMsg({ type: "err", text: "Rating failed: " + e.message });
-    }
-  };
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -687,10 +1027,10 @@ function LoansPage({ auth }) {
             <table>
               <thead><tr>
                 <th>#</th>{!isMember && <th>Member</th>}
-                <th>Book</th><th>Copy</th><th>Issued</th><th>Due</th><th>Status</th><th>Actions</th>
+                <th>Book</th><th>Copy</th><th>Issued</th><th>Due</th><th>Time left</th><th>Status</th><th>Actions</th>
               </tr></thead>
               <tbody>
-                {rows.length === 0 && <tr><td colSpan={8}><div className="empty">No loans found.</div></td></tr>}
+                {rows.length === 0 && <tr><td colSpan={9}><div className="empty">No loans found.</div></td></tr>}
                 {rows.map(l => (
                   <tr key={l.id}>
                     <td className="mono">{l.id}</td>
@@ -699,17 +1039,17 @@ function LoansPage({ auth }) {
                     <td className="mono">{l.copyNumber}</td>
                     <td className="mono" style={{ fontSize:".75rem" }}>{fmt(l.issuedAt)}</td>
                     <td className="mono" style={{ fontSize:".75rem", color: l.status==="OVERDUE" ? "var(--bad)" : "inherit" }}>{fmt(l.dueDate)}</td>
+                    <td>{l.status === "RETURNED" ? <Countdown days={null} /> : <Countdown days={daysUntil(l.dueDate, now)} kind="due" />}</td>
                     <td><Badge status={l.status} /></td>
                     <td><div className="td-actions">
-                      {!isMember && l.status !== "RETURNED" && <button className="btn btn-ok btn-sm" onClick={() => returnLoan(l.id)}>Return</button>}
-                      {isFaculty && l.status === "ACTIVE" && <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type:"extend", loan:l })}>Extend</button>}
+                      {!isMember && l.status !== "RETURNED" && (
+                        <button className="btn btn-ok btn-sm" onClick={() => returnLoan(l.id)}>Return</button>
+                      )}
+                      {isFaculty && l.status === "ACTIVE" && (
+                        <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type:"extend", loan:l })}>Extend</button>
+                      )}
                       {isMember && l.status === "RETURNED" && (
-                        <div className="td-rating">
-                          <StarRating value={ratings[l.bookId]} onChange={stars => submitRating(l.bookId, stars)} />
-                          <span className="rating-hint">
-                            {ratings[l.bookId] ? `Rated ★${ratings[l.bookId]}` : "Rate this book"}
-                          </span>
-                        </div>
+                        <ReviewInput key={l.bookId} bookId={l.bookId} token={token} />
                       )}
                     </div></td>
                   </tr>
@@ -780,13 +1120,22 @@ function IssueLoanModal({ token, onClose, onDone }) {
 
 function ExtendModal({ loan, onClose, onExtend }) {
   const [newDueDate, setNewDueDate] = useState("");
+
+  const dayAfterCurrentDue = new Date(loan.dueDate);
+  dayAfterCurrentDue.setDate(dayAfterCurrentDue.getDate() + 1);
+  const minDueStr = dayAfterCurrentDue.toISOString().split("T")[0];
+
+  const maxDue = new Date();
+  maxDue.setDate(maxDue.getDate() + 30);
+  const maxDueStr = maxDue.toISOString().split("T")[0];
+
   return (
     <Modal title="Extend loan" onClose={onClose}>
       <p style={{ fontSize:".95rem", marginBottom:"1.25rem", lineHeight:1.5, color:"var(--muted)" }}>
         Extending <strong style={{ color:"var(--ink)" }}>{loan.bookTitle}</strong>. Current due: {fmt(loan.dueDate)}.
       </p>
       <div className="field"><label>New due date</label>
-        <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)} /></div>
+        <input type="date" value={newDueDate} min={minDueStr} max={maxDueStr} onChange={e => setNewDueDate(e.target.value)} /></div>
       <div className="dialog-actions">
         <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
         <button className="btn btn-sm" disabled={!newDueDate} onClick={() => onExtend(newDueDate)}>Extend</button>
@@ -800,11 +1149,17 @@ function ReservationsPage({ auth }) {
   const { token, role } = auth;
   const isMember = ["STUDENT","FACULTY"].includes(role);
   const endpoint = isMember ? "/api/reservations/mine" : "/api/reservations";
-  const [rows, setRows]         = useState([]);
-  const [pg, setPg]             = useState({ number:0, totalPages:0, totalElements:0 });
-  const [loading, setLoading]   = useState(false);
+  const [rows, setRows]       = useState([]);
+  const [pg, setPg]           = useState({ number:0, totalPages:0, totalElements:0 });
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
-  const [msg, setMsg]           = useState(null);
+  const [msg, setMsg]         = useState(null);
+  const [now, setNow]         = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -849,10 +1204,10 @@ function ReservationsPage({ auth }) {
             <table>
               <thead><tr>
                 <th>#</th>{!isMember && <th>Member</th>}
-                <th>Book</th><th>Queue pos.</th><th>Reserved</th><th>Notified</th><th>Collect by</th><th>Status</th><th></th>
+                <th>Book</th><th>Queue pos.</th><th>Reserved</th><th>Notified</th><th>Collect by</th><th>Time left</th><th>Status</th><th></th>
               </tr></thead>
               <tbody>
-                {rows.length === 0 && <tr><td colSpan={9}><div className="empty">No reservations found.</div></td></tr>}
+                {rows.length === 0 && <tr><td colSpan={10}><div className="empty">No reservations found.</div></td></tr>}
                 {rows.map(r => (
                   <tr key={r.id}>
                     <td className="mono">{r.id}</td>
@@ -864,6 +1219,7 @@ function ReservationsPage({ auth }) {
                     <td className="mono" style={{ fontSize:".75rem", color: r.status==="NOTIFIED" ? "var(--warn)" : "inherit", fontWeight: r.status==="NOTIFIED" ? 600 : 400 }}>
                       {r.expiresAt ? fmt(r.expiresAt) : "—"}
                     </td>
+                    <td>{r.status === "NOTIFIED" ? <Countdown days={daysUntil(r.expiresAt, now)} kind="collect" /> : <Countdown days={null} />}</td>
                     <td><Badge status={r.status} /></td>
                     <td>{["WAITING","NOTIFIED"].includes(r.status) && (
                       <button className="btn btn-danger btn-sm" onClick={() => cancel(r.id)}>Cancel</button>
@@ -887,12 +1243,12 @@ function FinesPage({ auth }) {
   const canPay   = role === "LIBRARIAN";
   const canWaive = role === "ADMIN";
   const endpoint = isMember ? "/api/fines/mine" : "/api/fines";
-  const [rows, setRows]         = useState([]);
-  const [pg, setPg]             = useState({ number:0, totalPages:0, totalElements:0 });
-  const [loading, setLoading]   = useState(false);
+  const [rows, setRows]       = useState([]);
+  const [pg, setPg]           = useState({ number:0, totalPages:0, totalElements:0 });
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
-  const [modal, setModal]       = useState(null);
-  const [msg, setMsg]           = useState(null);
+  const [modal, setModal]     = useState(null);
+  const [msg, setMsg]         = useState(null);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -961,7 +1317,7 @@ function FinesPage({ auth }) {
                     <td className="mono" style={{ fontSize:".75rem" }}>{fmt(f.paidAt)}</td>
                     <td><Badge status={f.status} /></td>
                     <td><div className="td-actions">
-                      {canPay && f.status==="UNPAID" && <button className="btn btn-ok btn-sm" onClick={() => markPaid(f.id)}>Mark paid</button>}
+                      {canPay   && f.status==="UNPAID" && <button className="btn btn-ok btn-sm"    onClick={() => markPaid(f.id)}>Mark paid</button>}
                       {canWaive && f.status==="UNPAID" && <button className="btn btn-ghost btn-sm" onClick={() => setModal({ id:f.id })}>Waive</button>}
                     </div></td>
                   </tr>
@@ -997,12 +1353,12 @@ function WaiveForm({ fineId, onWaive, onClose }) {
 /* ─── REPORTS PAGE ────────────────────────────────────────── */
 function ReportsPage({ auth }) {
   const { token } = auth;
-  const [overdue, setOverdue]       = useState([]);
+  const [overdue, setOverdue]     = useState([]);
   const [overdueTotal, setOverdueTotal] = useState(0);
-  const [loading, setLoading]       = useState(false);
+  const [loading, setLoading]     = useState(false);
   const [summaryForm, setSummaryForm] = useState({ from:"", to:"" });
-  const [summary, setSummary]       = useState(null);
-  const [msg, setMsg]               = useState(null);
+  const [summary, setSummary]     = useState(null);
+  const [msg, setMsg]             = useState(null);
 
   const loadOverdue = useCallback(async () => {
     setLoading(true);
@@ -1028,7 +1384,7 @@ function ReportsPage({ auth }) {
     <div className="main">
       <div className="page-head"><h1 className="page-title">Reports</h1></div>
       {msg && <div className={`msg msg-${msg.type}`}>{msg.text}</div>}
-      <h2 style={{ fontSize:"1.15rem", fontWeight:400, marginBottom:"1rem" }}>
+      <h2 style={{ fontFamily:"'EB Garamond', Georgia, serif", fontSize:"1.15rem", fontWeight:400, color:"var(--ink)", marginBottom:"1rem" }}>
         Overdue loans <span style={{ fontFamily:"monospace", fontSize:".75rem", color:"var(--muted)" }}>({overdueTotal})</span>
       </h2>
       {loading ? <div className="loading">Loading…</div> : (
@@ -1051,7 +1407,7 @@ function ReportsPage({ auth }) {
           </table>
         </div>
       )}
-      <h2 style={{ fontSize:"1.15rem", fontWeight:400, marginBottom:"1rem" }}>Fines summary</h2>
+      <h2 style={{ fontFamily:"'EB Garamond', Georgia, serif", fontSize:"1.15rem", fontWeight:400, color:"var(--ink)", marginBottom:"1rem" }}>Fines summary</h2>
       <form onSubmit={loadSummary}>
         <div className="filter-row">
           <div className="field"><label>From</label><input type="date" required value={summaryForm.from} onChange={e => setSummaryForm(f => ({ ...f, from: e.target.value }))} /></div>
@@ -1072,12 +1428,13 @@ function ReportsPage({ auth }) {
 /* ─── USERS PAGE ──────────────────────────────────────────── */
 function UsersPage({ auth }) {
   const { token } = auth;
-  const [rows, setRows]         = useState([]);
-  const [pg, setPg]             = useState({ number:0, totalPages:0, totalElements:0 });
-  const [loading, setLoading]   = useState(false);
-  const [filters, setFilters]   = useState({ role:"", active:"" });
-  const [modal, setModal]       = useState(null);
-  const [msg, setMsg]           = useState(null);
+  const [rows, setRows]       = useState([]);
+  const [pg, setPg]           = useState({ number:0, totalPages:0, totalElements:0 });
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({ role:"", active:"" });
+  const [modal, setModal]     = useState(null);
+  const [editNameUser, setEditNameUser] = useState(null);
+  const [msg, setMsg]         = useState(null);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1101,6 +1458,14 @@ function UsersPage({ auth }) {
   const activate = async (id) => {
     try { await api(`/api/admin/users/${id}/activate`, { method:"PATCH" }, token); setMsg({ type:"ok", text:"User activated." }); load(pg.number); }
     catch(e) { setMsg({ type:"err", text: e.message }); }
+  };
+  const renameUser = async (newName) => {
+    try {
+      await api(`/api/admin/users/${editNameUser.id}/name`, { method:"PATCH", body: JSON.stringify({ fullName: newName }) }, token);
+      setMsg({ type:"ok", text:"Name updated." });
+      setEditNameUser(null);
+      load(pg.number);
+    } catch(e) { throw e; }
   };
 
   return (
@@ -1144,6 +1509,7 @@ function UsersPage({ auth }) {
                     <td><span className="badge" style={{ color: u.active ? "var(--ok)" : "var(--muted)", borderColor: u.active ? "var(--ok)" : "var(--border)" }}>{u.active ? "active" : "inactive"}</span></td>
                     <td className="mono" style={{ fontSize:".72rem" }}>{fmt(u.createdAt)}</td>
                     <td><div className="td-actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditNameUser(u)}>Edit name</button>
                       {u.active  && <button className="btn btn-danger btn-sm" onClick={() => deactivate(u.id)}>Deactivate</button>}
                       {!u.active && <button className="btn btn-ok btn-sm"     onClick={() => activate(u.id)}>Activate</button>}
                     </div></td>
@@ -1156,9 +1522,44 @@ function UsersPage({ auth }) {
         </>
       )}
       {modal === "staff" && (
-        <CreateStaffModal token={token} onClose={() => setModal(null)} onDone={() => { setModal(null); setMsg({ type:"ok", text:"Staff account created." }); load(0); }} />
+        <CreateStaffModal token={token} onClose={() => setModal(null)}
+          onDone={() => { setModal(null); setMsg({ type:"ok", text:"Staff account created." }); load(0); }} />
+      )}
+      {editNameUser && (
+        <EditNameModal user={editNameUser} onClose={() => setEditNameUser(null)} onSave={renameUser} />
       )}
     </div>
+  );
+}
+
+function EditNameModal({ user, onClose, onSave }) {
+  const [name, setName]       = useState(user.fullName);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr]         = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault(); setErr(""); setLoading(true);
+    try { await onSave(name.trim()); }
+    catch (e) { setErr(e.message); setLoading(false); }
+  };
+
+  return (
+    <Modal title={`Edit name: ${user.fullName}`} onClose={onClose}>
+      <p style={{ fontSize:".9rem", color:"var(--muted)", marginBottom:"1.25rem", lineHeight:1.5 }}>
+        {user.universityId || user.email} · Correct this only after verifying the person's identity directly.
+      </p>
+      <form onSubmit={submit}>
+        <div className="field">
+          <label>Full name</label>
+          <input required minLength={2} value={name} onChange={e => setName(e.target.value)} autoFocus />
+        </div>
+        {err && <div className="msg msg-err">{err}</div>}
+        <div className="dialog-actions">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button className="btn btn-sm" disabled={loading || !name.trim()}>{loading ? "Saving…" : "Save name"}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -1180,14 +1581,11 @@ function CreateStaffModal({ token, onClose, onDone }) {
         <div className="field"><label>Full Name</label><input required value={form.fullName} onChange={set("fullName")} /></div>
         <div className="field">
           <label>Staff ID</label>
-          <input
-            required
-            value={form.staffId}
+          <input required value={form.staffId}
             onChange={e => setForm(f => ({ ...f, staffId: e.target.value.toUpperCase() }))}
             placeholder="LIB/XXXX/YY or ADM/XXXX/YY"
             pattern="^(LIB|ADM)/\d{3,6}/\d{2}$"
-            title="LIB/XXXX/YY for librarians · ADM/XXXX/YY for admins"
-          />
+            title="LIB/XXXX/YY for librarians · ADM/XXXX/YY for admins" />
           <div className="field-hint">LIB/XXXX/YY for librarians · ADM/XXXX/YY for admins</div>
         </div>
         <div className="field"><label>Email</label><input required type="email" value={form.email} onChange={set("email")} /></div>
@@ -1211,8 +1609,8 @@ function CreateStaffModal({ token, onClose, onDone }) {
 /* ─── REGISTRY PAGE ───────────────────────────────────────── */
 function RegistryPage({ auth }) {
   const { token } = auth;
-  const [rows, setRows] = useState([]);
-  const [pg, setPg]     = useState({ number:0, totalPages:0, totalElements:0 });
+  const [rows, setRows]   = useState([]);
+  const [pg, setPg]       = useState({ number:0, totalPages:0, totalElements:0 });
   const [modal, setModal] = useState(false);
   const [form, setForm]   = useState({ universityId:"", fullName:"", role:"STUDENT", department:"" });
   const [msg, setMsg]     = useState(null);
@@ -1288,7 +1686,7 @@ function RegistryPage({ auth }) {
 }
 
 /* ─── SIDEBAR ─────────────────────────────────────────────── */
-function Sidebar({ auth, page, onPage, onLogout }) {
+function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme }) {
   const { role, username, universityId } = auth;
   const isAdmin      = role === "ADMIN";
   const isLibOrAdmin = ["ADMIN","LIBRARIAN"].includes(role);
@@ -1298,7 +1696,19 @@ function Sidebar({ auth, page, onPage, onLogout }) {
   );
   return (
     <nav className="sidebar">
-      <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
+      {/* ── Wordmark + theme toggle in one row at the very top ── */}
+      <div className="sidebar-wm-row">
+        <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
+        <button
+          className="theme-btn-icon"
+          onClick={onToggleTheme}
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? "☀" : "☾"}
+        </button>
+      </div>
+
       <div>{link("Catalogue", "books")}</div>
       {isMember && (<>
         <div className="nav-section-label">Library</div>
@@ -1318,6 +1728,8 @@ function Sidebar({ auth, page, onPage, onLogout }) {
         {link("Users", "users")}
         {link("Registry", "registry")}
       </>)}
+
+      {/* ── Footer: user info + sign out only (theme toggle moved to top) ── */}
       <div className="sidebar-foot">
         <div className="user-chip">
           <strong>{username}</strong>
@@ -1333,14 +1745,20 @@ function Sidebar({ auth, page, onPage, onLogout }) {
 }
 
 /* ─── ROOT ────────────────────────────────────────────────── */
-// FIX 3 (continued): Added `successMsg` state that flows login→register→login,
-//         and `welcome` toast that auto-dismisses after 4 s on successful sign-in.
 export default function LibraTrack() {
-  const [auth, setAuth]           = useState(null);
-  const [screen, setScreen]       = useState("login");
-  const [page, setPage]           = useState("books");
-  const [successMsg, setSuccessMsg] = useState("");   // registration → login message
-  const [welcome, setWelcome]     = useState("");     // post-login toast
+  const [auth, setAuth]       = useState(null);
+  const [screen, setScreen]   = useState("login");
+  const [page, setPage]       = useState("books");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [welcome, setWelcome] = useState("");
+  const [theme, setTheme]     = useState(() => localStorage.getItem("lt-theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("lt-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
 
   const handleLogin = (a) => {
     setSuccessMsg("");
@@ -1360,26 +1778,26 @@ export default function LibraTrack() {
   return (
     <>
       <style>{CSS}</style>
-
-      {/* Welcome toast — shown immediately after login, auto-hides after 4 s */}
-      {welcome && (
-        <div className="welcome-toast">✓ {welcome}</div>
-      )}
-
+      {welcome && <div className="welcome-toast">✓ {welcome}</div>}
       {!auth ? (
         screen === "login"
           ? <LoginPage
               onLogin={handleLogin}
               onRegister={() => { setSuccessMsg(""); setScreen("register"); }}
               successMessage={successMsg}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
           : <RegisterPage
               onBack={() => { setSuccessMsg(""); setScreen("login"); }}
               onSuccess={(msg) => { setSuccessMsg(msg); setScreen("login"); }}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
       ) : (
         <div className="app">
-          <Sidebar auth={auth} page={page} onPage={setPage} onLogout={handleLogout} />
+          <Sidebar auth={auth} page={page} onPage={setPage} onLogout={handleLogout}
+            theme={theme} onToggleTheme={toggleTheme} />
           {page === "books"        && <BooksPage auth={auth} />}
           {page === "loans"        && <LoansPage auth={auth} />}
           {page === "reservations" && <ReservationsPage auth={auth} />}
