@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 /* ─── CONFIG ─────────────────────────────────────────────── */
-const BASE = "";
+const BASE = import.meta.env.VITE_API_URL || "";
 
 /* ─── API HELPER ─────────────────────────────────────────── */
 async function api(path, opts = {}, token = null) {
