@@ -13,23 +13,17 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * Development-only endpoints for triggering scheduled jobs on demand.
- * These exist solely so you can test notification flows without waiting
- * for the 01:00 AM cron job. Restricted to ADMIN role and only active
- * when the "default" (local dev) profile is active — they are NOT
- * available in production.
+ * Admin endpoints for triggering scheduled jobs on demand.
+ * Restricted to ADMIN role only. Useful for demos, testing,
+ * or manually re-running the fine job if the nightly cron ever fails.
  *
- * Usage (from the backend terminal or any REST client like curl):
- *
- *   POST /api/dev/trigger/overdue-fines
- *   POST /api/dev/trigger/expire-reservations
- *
- * Watch the backend console for [NOTIFY] log lines after calling these.
+ * POST /api/dev/trigger/overdue-fines
+ * POST /api/dev/trigger/expire-reservations
  */
 @RestController
 @RequestMapping("/api/dev")
 @RequiredArgsConstructor
-@Profile("default")   // only active locally — not in prod profile
+@Profile({"default", "prod"})
 public class DevToolsController {
 
     private final OverdueFineScheduler scheduler;
@@ -41,7 +35,7 @@ public class DevToolsController {
         return ResponseEntity.ok(Map.of(
                 "triggered", "calculateOverdueFines",
                 "at", LocalDateTime.now().toString(),
-                "note", "Check the backend console for [NOTIFY] log lines."
+                "note", "Fine calculation complete."
         ));
     }
 
@@ -52,7 +46,7 @@ public class DevToolsController {
         return ResponseEntity.ok(Map.of(
                 "triggered", "expireStaleReservations",
                 "at", LocalDateTime.now().toString(),
-                "note", "Check the backend console for [NOTIFY] log lines."
+                "note", "Reservation expiry complete."
         ));
     }
 }
