@@ -47,6 +47,7 @@ html[data-theme="dark"] {
   --bad:    #AA3232;
   --warn:   #926300;
   --info:   #1A5688;
+  color-scheme: dark;
 }
 
 /* ── Three depth layers ───────────────────────────────────
@@ -79,6 +80,16 @@ html[data-theme="dark"] .field textarea {
 html[data-theme="dark"] .field input:focus,
 html[data-theme="dark"] .field select:focus,
 html[data-theme="dark"] .field textarea:focus { border-color: #E2DED7; }
+
+/* ── Fix select dropdown arrow for dark mode (light-colored arrow) ── */
+html[data-theme="dark"] .field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23E2DED7'/%3E%3C/svg%3E");
+}
+/* Native option elements in dark mode */
+html[data-theme="dark"] .field select option {
+  background: #1F1E1C;
+  color: #E2DED7;
+}
 
 /* ── Buttons — desaturated, matching the light mode's restraint ── */
 html[data-theme="dark"] .btn {
@@ -189,7 +200,7 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .app { display: flex; min-height: 100vh; overflow-x: hidden; }
 
 /* ── Sidebar ── */
-.sidebar { width: var(--sw); min-height: 100vh; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.5rem; position: fixed; top: 0; left: 0; bottom: 0; background: var(--paper); z-index: 20; overflow-y: auto; }
+.sidebar { width: var(--sw); min-height: 100vh; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.5rem; position: fixed; top: 0; left: 0; bottom: 0; background: var(--paper); z-index: 20; overflow-y: auto; flex-shrink: 0; }
 
 /* Wordmark row: brand name left, theme toggle right */
 .sidebar-wm-row {
@@ -212,7 +223,7 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .user-chip .uid { display: block; color: var(--accent); font-size: .68rem; letter-spacing: .06em; }
 
 /* ── Main content ── */
-.main { margin-left: var(--sw); flex: 1; padding: 2.5rem 3rem; width: calc(100vw - var(--sw)); max-width: 1040px; min-width: 0; overflow-x: hidden; animation: fadeUp .3s ease both; }
+.main { flex: 1; padding: 2.5rem 3rem; max-width: 1040px; min-width: 0; overflow-x: hidden; animation: fadeUp .3s ease both; }
 .page-head { margin-bottom: 1.75rem; padding-bottom: .9rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
 /* ── Page title — explicit color + font for consistent rendering across themes ── */
@@ -295,6 +306,73 @@ tr:hover td { background: rgba(160,78,31,.03); }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0%, 100% { opacity: .6; } 50% { opacity: .2; } }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ── Live fine styles ── */
+.live-fine-panel { border: 1px solid var(--bad); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; animation: fadeUp .3s ease both; }
+.live-fine-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: livePulse 1.4s ease-in-out infinite; flex-shrink: 0; }
+.live-label { font-family: 'DM Mono', monospace; font-size: .6rem; text-transform: uppercase; letter-spacing: .12em; color: var(--bad); }
+.live-fine-amount { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 300; color: var(--bad); line-height: 1; }
+.live-fine-breakdown { margin-top: .6rem; font-family: 'DM Mono', monospace; font-size: .62rem; color: var(--muted); line-height: 1.8; letter-spacing: .02em; }
+.live-fine-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; }
+.projected-fine { font-family: 'DM Mono', monospace; font-size: .75rem; color: var(--bad); font-weight: 500; }
+.projected-fine.grace { color: var(--warn); }
+.projected-fine.zero { color: var(--muted); }
+
+/* ── Mobile responsive ── */
+.mobile-topbar { display: none; }
+.mobile-overlay { display: none; }
+.mobile-menu-btn { display: none; }
+@media (max-width: 768px) {
+  :root { --sw: 0px; }
+  .sidebar {
+    position: fixed; left: -290px; width: 280px;
+    transition: left .25s cubic-bezier(.4,0,.2,1);
+    box-shadow: none; z-index: 100;
+  }
+  .sidebar.open { left: 0; box-shadow: 6px 0 24px rgba(0,0,0,.22); }
+  .mobile-overlay {
+    display: block; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 99;
+    animation: fadeIn .18s ease;
+  }
+  .main { margin-left: 0 !important; width: 100%; max-width: 100%; padding: 0 1rem 2rem; }
+  .mobile-topbar {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .9rem 0 .75rem; margin-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile-menu-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; background: none; border: 1px solid var(--border);
+    color: var(--ink); cursor: pointer; font-size: 1.1rem; flex-shrink: 0;
+    transition: border-color .15s, color .15s;
+  }
+  .mobile-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mobile-topbar-title {
+    font-size: .72rem; font-weight: 600; letter-spacing: .2em;
+    text-transform: uppercase; line-height: 1.5;
+  }
+  .mobile-topbar-title em { color: var(--accent); font-style: normal; }
+  .filter-row { flex-direction: column; gap: .5rem; }
+  .filter-row .field { min-width: unset; width: 100%; flex: unset; }
+  .page-head { gap: .5rem; padding-bottom: .6rem; margin-bottom: 1.25rem; }
+  .books-grid { grid-template-columns: 1fr; }
+  .dialog { padding: 1.25rem; max-width: calc(100vw - 2rem); max-height: 88vh; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .auth-shell { padding: 2rem 1.25rem 3rem; }
+  .auth-card { max-width: 100%; }
+  .live-fine-panel { padding: 1rem; }
+  td { font-size: .88rem; }
+  th { font-size: .58rem; }
+  .td-actions { flex-direction: column; }
+}
+@media (max-width: 480px) {
+  .page-title { font-size: 1.4rem; }
+  .dialog { padding: 1rem; }
+  .live-fine-amount { font-size: 1.5rem; }
+}
 `;
 
 /* ─── UTILS ───────────────────────────────────────────────── */
@@ -307,6 +385,22 @@ const daysUntil = (dateStr, now) => {
   const todayMidnight  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const targetMidnight = new Date(target.getFullYear(), target.getMonth(), target.getDate());
   return Math.round((targetMidnight - todayMidnight) / 86400000);
+};
+
+/* Mirrors backend FineCalculator — grace=2d, $0.50/d, doubles after 14d */
+const calcProjectedFine = (dueDateStr, now = new Date()) => {
+  const DAILY = 0.50, GRACE = 2, ESCALATION = 14;
+  if (!dueDateStr) return null;
+  const due   = new Date(dueDateStr + "T00:00:00");
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const daysLate = Math.round((today - dueDay) / 86400000);
+  if (daysLate <= 0) return null;           // not yet late
+  if (daysLate <= GRACE) return { amount: 0, daysLate, inGrace: true };
+  const normalDays = Math.max(0, Math.min(daysLate, ESCALATION) - GRACE);
+  const doubleDays = Math.max(0, daysLate - Math.max(GRACE, ESCALATION));
+  const amount = normalDays * DAILY + doubleDays * DAILY * 2;
+  return { amount, daysLate, inGrace: false, normalDays, doubleDays };
 };
 
 const parsePage = (data) => {
@@ -359,6 +453,59 @@ function Pager({ page, totalPages, onPage }) {
       <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => onPage(page-1)}>← prev</button>
       <span>page {page+1} / {totalPages}</span>
       <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => onPage(page+1)}>next →</button>
+    </div>
+  );
+}
+
+/* ─── PROJECTED FINE (inline, for loan rows) ──────────────── */
+function ProjectedFine({ dueDate, now }) {
+  const fine = calcProjectedFine(dueDate, now);
+  if (!fine) return <span className="projected-fine zero">—</span>;
+  if (fine.inGrace) return (
+    <span className="projected-fine grace" title={`${fine.daysLate} day${fine.daysLate===1?"":"s"} late — still in 2-day grace period`}>
+      grace ({fine.daysLate}d)
+    </span>
+  );
+  return (
+    <span className="projected-fine" title={`${fine.daysLate} days late — ${fine.normalDays}d @ $0.50${fine.doubleDays > 0 ? ` + ${fine.doubleDays}d @ $1.00` : ""}`}>
+      ${fine.amount.toFixed(2)}
+    </span>
+  );
+}
+
+/* ─── LIVE FINE PANEL (top of FinesPage for members) ─────── */
+function LiveFinePanel({ rows, now }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const unpaidRows = rows.filter(f => f.status === "UNPAID");
+  if (unpaidRows.length === 0) return null;
+
+  const totalUnpaid = unpaidRows.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+  return (
+    <div className="live-fine-panel">
+      <div className="live-fine-header">
+        <div className="live-dot" />
+        <span className="live-label">Live · Accruing</span>
+      </div>
+      <div className="live-fine-row">
+        <div>
+          <div className="live-fine-amount">${totalUnpaid.toFixed(2)}</div>
+          <div className="live-fine-breakdown">
+            {unpaidRows.length} unpaid fine{unpaidRows.length !== 1 ? "s" : ""}
+            &nbsp;·&nbsp;$0.50 / day normal rate
+            &nbsp;·&nbsp;$1.00 / day after 14 days
+            &nbsp;·&nbsp;2-day grace period
+          </div>
+        </div>
+        <div style={{ fontFamily:"'DM Mono',monospace", fontSize:".6rem", color:"var(--muted)", alignSelf:"flex-end" }}>
+          as of {now.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1027,10 +1174,10 @@ function LoansPage({ auth }) {
             <table>
               <thead><tr>
                 <th>#</th>{!isMember && <th>Member</th>}
-                <th>Book</th><th>Copy</th><th>Issued</th><th>Due</th><th>Time left</th><th>Status</th><th>Actions</th>
+                <th>Book</th><th>Copy</th><th>Issued</th><th>Due</th><th>Time left</th><th>Proj. fine</th><th>Status</th><th>Actions</th>
               </tr></thead>
               <tbody>
-                {rows.length === 0 && <tr><td colSpan={9}><div className="empty">No loans found.</div></td></tr>}
+                {rows.length === 0 && <tr><td colSpan={10}><div className="empty">No loans found.</div></td></tr>}
                 {rows.map(l => (
                   <tr key={l.id}>
                     <td className="mono">{l.id}</td>
@@ -1040,6 +1187,7 @@ function LoansPage({ auth }) {
                     <td className="mono" style={{ fontSize:".75rem" }}>{fmt(l.issuedAt)}</td>
                     <td className="mono" style={{ fontSize:".75rem", color: l.status==="OVERDUE" ? "var(--bad)" : "inherit" }}>{fmt(l.dueDate)}</td>
                     <td>{l.status === "RETURNED" ? <Countdown days={null} /> : <Countdown days={daysUntil(l.dueDate, now)} kind="due" />}</td>
+                    <td>{l.status === "RETURNED" ? <span className="projected-fine zero">—</span> : <ProjectedFine dueDate={l.dueDate} now={now} />}</td>
                     <td><Badge status={l.status} /></td>
                     <td><div className="td-actions">
                       {!isMember && l.status !== "RETURNED" && (
@@ -1249,6 +1397,12 @@ function FinesPage({ auth }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [modal, setModal]     = useState(null);
   const [msg, setMsg]         = useState(null);
+  const [now, setNow]         = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1284,6 +1438,7 @@ function FinesPage({ auth }) {
         <h1 className="page-title">{isMember ? "My Fines" : "All Fines"}</h1>
         <span className="page-sub">{pg.totalElements} records</span>
       </div>
+      {isMember && <LiveFinePanel rows={rows} now={now} />}
       {msg && <div className={`msg msg-${msg.type}`}>{msg.text}</div>}
       <div className="filter-row">
         <div className="field"><label>Status</label>
@@ -1686,16 +1841,18 @@ function RegistryPage({ auth }) {
 }
 
 /* ─── SIDEBAR ─────────────────────────────────────────────── */
-function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme }) {
+function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme, open, onClose }) {
   const { role, username, universityId } = auth;
   const isAdmin      = role === "ADMIN";
   const isLibOrAdmin = ["ADMIN","LIBRARIAN"].includes(role);
   const isMember     = ["STUDENT","FACULTY"].includes(role);
   const link = (label, id) => (
-    <button key={id} className={`nav-btn ${page === id ? "active" : ""}`} onClick={() => onPage(id)}>{label}</button>
+    <button key={id} className={`nav-btn ${page === id ? "active" : ""}`} onClick={() => { onPage(id); onClose?.(); }}>{label}</button>
   );
   return (
-    <nav className="sidebar">
+    <>
+      {open && <div className="mobile-overlay" onClick={onClose} />}
+      <nav className={`sidebar${open ? " open" : ""}`}>
       {/* ── Wordmark + theme toggle in one row at the very top ── */}
       <div className="sidebar-wm-row">
         <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
@@ -1741,17 +1898,19 @@ function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme }) {
         </button>
       </div>
     </nav>
+    </>
   );
 }
 
 /* ─── ROOT ────────────────────────────────────────────────── */
 export default function LibraTrack() {
-  const [auth, setAuth]       = useState(null);
-  const [screen, setScreen]   = useState("login");
-  const [page, setPage]       = useState("books");
+  const [auth, setAuth]           = useState(null);
+  const [screen, setScreen]       = useState("login");
+  const [page, setPage]           = useState("books");
   const [successMsg, setSuccessMsg] = useState("");
-  const [welcome, setWelcome] = useState("");
-  const [theme, setTheme]     = useState(() => localStorage.getItem("lt-theme") || "light");
+  const [welcome, setWelcome]     = useState("");
+  const [theme, setTheme]         = useState(() => localStorage.getItem("lt-theme") || "light");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -1766,6 +1925,7 @@ export default function LibraTrack() {
     setTimeout(() => setWelcome(""), 4000);
     setAuth(a);
     setPage("books");
+    setSidebarOpen(false);
   };
 
   const handleLogout = () => {
@@ -1773,7 +1933,16 @@ export default function LibraTrack() {
     setAuth(null);
     setScreen("login");
     setWelcome("");
+    setSidebarOpen(false);
   };
+
+  /* Mobile topbar injected at the top of each page via context-free wrapper */
+  const MobileTopbar = () => (
+    <div className="mobile-topbar">
+      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Open menu">☰</button>
+      <div className="mobile-topbar-title">LIBRA<em>TRACK</em></div>
+    </div>
+  );
 
   return (
     <>
@@ -1797,14 +1966,18 @@ export default function LibraTrack() {
       ) : (
         <div className="app">
           <Sidebar auth={auth} page={page} onPage={setPage} onLogout={handleLogout}
-            theme={theme} onToggleTheme={toggleTheme} />
-          {page === "books"        && <BooksPage auth={auth} />}
-          {page === "loans"        && <LoansPage auth={auth} />}
-          {page === "reservations" && <ReservationsPage auth={auth} />}
-          {page === "fines"        && <FinesPage auth={auth} />}
-          {page === "reports"      && <ReportsPage auth={auth} />}
-          {page === "users"        && <UsersPage auth={auth} />}
-          {page === "registry"     && <RegistryPage auth={auth} />}
+            theme={theme} onToggleTheme={toggleTheme}
+            open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div style={{ flex:1, minWidth:0, marginLeft:"var(--sw)" }}>
+            <MobileTopbar />
+            {page === "books"        && <BooksPage auth={auth} />}
+            {page === "loans"        && <LoansPage auth={auth} />}
+            {page === "reservations" && <ReservationsPage auth={auth} />}
+            {page === "fines"        && <FinesPage auth={auth} />}
+            {page === "reports"      && <ReportsPage auth={auth} />}
+            {page === "users"        && <UsersPage auth={auth} />}
+            {page === "registry"     && <RegistryPage auth={auth} />}
+          </div>
         </div>
       )}
     </>
