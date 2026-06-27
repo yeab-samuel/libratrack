@@ -1228,6 +1228,15 @@ function IssueLoanModal({ token, onClose, onDone }) {
   const [memberInfo, setMemberInfo] = useState(null);
   const [loading, setLoading]     = useState(false);
   const [err, setErr]             = useState("");
+
+  /* ── Book search → pick a title → pick an available copy ───────── */
+  const [bookQuery, setBookQuery]     = useState("");
+  const [bookResults, setBookResults] = useState([]);
+  const [bookSearching, setBookSearching] = useState(false);
+  const [selectedBook, setSelectedBook]   = useState(null);
+  const [copies, setCopies]           = useState([]);
+  const [copiesLoading, setCopiesLoading] = useState(false);
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const lookupMember = async () => {
@@ -1237,6 +1246,29 @@ function IssueLoanModal({ token, onClose, onDone }) {
       setForm(f => ({ ...f, memberId: String(u.id) }));
       setErr("");
     } catch(e) { setErr("Member not found: " + e.message); setMemberInfo(null); }
+  };
+
+  const searchBooks = async () => {
+    if (!bookQuery.trim()) return;
+    setBookSearching(true);
+    try {
+      const params = new URLSearchParams({ title: bookQuery, size: 6 });
+      const data = await api(`/api/books/search?${params}`, {}, token);
+      setBookResults(data.content || []);
+    } catch(e) { setErr("Book search failed: " + e.message); }
+    finally { setBookSearching(false); }
+  };
+
+  const pickBook = async (book) => {
+    setSelectedBook(book);
+    setBookResults([]);
+    setForm(f => ({ ...f, bookCopyId: "" }));
+    setCopiesLoading(true);
+    try {
+      const data = await api(`/api/books/${book.id}/copies/available`, {}, token);
+      setCopies(Array.isArray(data) ? data : []);
+    } catch(e) { setErr("Could not load copies: " + e.message); setCopies([]); }
+    finally { setCopiesLoading(false); }
   };
 
   const submit = async (e) => {
@@ -1260,14 +1292,70 @@ function IssueLoanModal({ token, onClose, onDone }) {
         </div>
         <div className="field"><label>Member ID (auto-filled)</label>
           <input required type="number" value={form.memberId} onChange={set("memberId")} /></div>
-        <div className="field"><label>Book Copy ID</label>
-          <input required type="number" value={form.bookCopyId} onChange={set("bookCopyId")} /></div>
+
+        <div className="field">
+          <label>Find book by title</label>
+          <div style={{ display:"flex", gap:".5rem" }}>
+            <input
+              value={bookQuery}
+              onChange={e => setBookQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); searchBooks(); } }}
+              placeholder="e.g. Clean Code"
+              style={{ flex:1 }}
+            />
+            <button type="button" className="btn btn-ghost btn-sm" disabled={bookSearching} onClick={searchBooks}>
+              {bookSearching ? "…" : "Search"}
+            </button>
+          </div>
+
+          {bookResults.length > 0 && (
+            <div style={{ border:"1px solid var(--border)", marginTop:".5rem", maxHeight:"160px", overflowY:"auto" }}>
+              {bookResults.map(b => (
+                <button
+                  type="button"
+                  key={b.id}
+                  onClick={() => pickBook(b)}
+                  style={{
+                    display:"block", width:"100%", textAlign:"left", padding:".5rem .65rem",
+                    background:"none", border:"none", borderBottom:"1px solid var(--border)",
+                    cursor:"pointer", fontFamily:"'EB Garamond', serif", fontSize:".9rem", color:"var(--ink)",
+                  }}
+                >
+                  {b.title} <span style={{ color:"var(--muted)", fontStyle:"italic" }}>— {b.author}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedBook && (
+            <div className="msg msg-ok" style={{ marginTop:".4rem" }}>
+              ✓ {selectedBook.title} — {selectedBook.author}
+            </div>
+          )}
+        </div>
+
+        {selectedBook && (
+          <div className="field">
+            <label>Available copy</label>
+            {copiesLoading ? (
+              <div style={{ fontSize:".82rem", color:"var(--muted)" }}>Loading copies…</div>
+            ) : copies.length === 0 ? (
+              <div className="msg msg-err">No available copies for this title.</div>
+            ) : (
+              <select required value={form.bookCopyId} onChange={set("bookCopyId")}>
+                <option value="">— choose a copy —</option>
+                {copies.map(c => <option key={c.id} value={c.id}>{c.copyNumber} ({c.condition})</option>)}
+              </select>
+            )}
+          </div>
+        )}
+
         <div className="field"><label>Due date</label>
           <input required type="date" value={form.dueDate} onChange={set("dueDate")} /></div>
         {err && <div className="msg msg-err">{err}</div>}
         <div className="dialog-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-          <button className="btn btn-sm" disabled={loading}>{loading ? "Issuing…" : "Issue loan"}</button>
+          <button className="btn btn-sm" disabled={loading || !form.bookCopyId}>{loading ? "Issuing…" : "Issue loan"}</button>
         </div>
       </form>
     </Modal>
