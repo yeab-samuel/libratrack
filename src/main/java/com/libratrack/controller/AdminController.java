@@ -36,9 +36,9 @@ public class AdminController {
     }
 
     /** Find a user by their university ID (for counter lookup) */
-    @GetMapping("/users/by-university-id/{universityId}")
+    @GetMapping("/users/by-university-id")
     @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
-    public ResponseEntity<UserDTO> getUserByUniversityId(@PathVariable String universityId) {
+    public ResponseEntity<UserDTO> getUserByUniversityId(@RequestParam String universityId) {
         return ResponseEntity.ok(userService.getUserByUniversityId(universityId));
     }
 

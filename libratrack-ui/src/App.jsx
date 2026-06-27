@@ -213,6 +213,10 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 }
 .sidebar-wm { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; line-height: 1.5; }
 .sidebar-wm em { color: var(--accent); font-style: normal; }
+.sidebar-wm-actions { display: flex; align-items: center; gap: .5rem; }
+
+/* Mobile-only close (✕) button inside the open sidebar — hidden on desktop */
+.mobile-sidebar-close { display: none; }
 
 .nav-section-label { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--border); margin: 1.25rem 0 .4rem; }
 .nav-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'EB Garamond', serif; font-size: .975rem; color: var(--muted); padding: .35rem 0; transition: color .12s; letter-spacing: .01em; }
@@ -334,6 +338,8 @@ tr:hover td { background: rgba(160,78,31,.03); }
     box-shadow: none; z-index: 100;
   }
   .sidebar.open { left: 0; box-shadow: 6px 0 24px rgba(0,0,0,.22); }
+  /* Show the in-sidebar ✕ close button only once the sidebar is open on mobile */
+  .sidebar.open .mobile-sidebar-close { display: flex; }
   .mobile-overlay {
     display: block; position: fixed; inset: 0;
     background: rgba(0,0,0,.5); z-index: 99;
@@ -1226,7 +1232,7 @@ function IssueLoanModal({ token, onClose, onDone }) {
 
   const lookupMember = async () => {
     try {
-      const u = await api(`/api/admin/users/by-university-id/${encodeURIComponent(lookup)}`, {}, token);
+      const u = await api(`/api/admin/users/by-university-id?universityId=${encodeURIComponent(lookup)}`, {}, token);
       setMemberInfo(u);
       setForm(f => ({ ...f, memberId: String(u.id) }));
       setErr("");
@@ -1855,17 +1861,29 @@ function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme, open, onC
     <>
       {open && <div className="mobile-overlay" onClick={onClose} />}
       <nav className={`sidebar${open ? " open" : ""}`}>
-      {/* ── Wordmark + theme toggle in one row at the very top ── */}
+      {/* ── Wordmark + theme toggle (+ mobile close ✕) in one row at the very top ── */}
       <div className="sidebar-wm-row">
         <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
-        <button
-          className="theme-btn-icon"
-          onClick={onToggleTheme}
-          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? "☀" : "☾"}
-        </button>
+        <div className="sidebar-wm-actions">
+          <button
+            className="theme-btn-icon"
+            onClick={onToggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
+          {/* Mobile-only — lets the person close the sidebar with an explicit ✕
+              instead of having to tap the dimmed area outside it */}
+          <button
+            className="theme-btn-icon mobile-sidebar-close"
+            onClick={onClose}
+            title="Close menu"
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <div>{link("Catalogue", "books")}</div>
