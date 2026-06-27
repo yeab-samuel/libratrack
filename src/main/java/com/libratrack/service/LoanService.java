@@ -25,6 +25,7 @@ public class LoanService {
     private final ReservationRepository reservationRepository;
     private final ReservationService reservationService;
     private final FineCalculator fineCalculator;
+    private final NotificationService notificationService;
 
     @Value("${app.max-loans-student:3}")
     private int maxLoansStudent;
@@ -115,6 +116,27 @@ public class LoanService {
                 .dueDate(req.dueDate())
                 .processedBy(staff)
                 .build());
+
+        // A counter-issued loan can legally be backdated (e.g. correcting a
+        // paper-log entry, or — as used in this project — a demo/test loan).
+        // The nightly OverdueFineScheduler would normally be what flips a
+        // loan to OVERDUE and creates its fine, but that only runs once a
+        // day. If the loan is *already* overdue the moment it's created,
+        // evaluate it immediately using the same FineCalculator so the
+        // Fines/Reports pages reflect it right away instead of leaving a
+        // confusing gap until the next 1am run.
+        long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
+        if (fineCalculator.isBillable(daysLate)) {
+            loan.setStatus(LoanStatus.OVERDUE);
+            loanRepository.save(loan);
+
+            BigDecimal amount = fineCalculator.calculate(daysLate);
+            fineRepository.save(FineRecord.builder()
+                    .loan(loan).member(member).amount(amount).build());
+
+            notificationService.sendOverdueFineNotice(member, copy.getBook().getTitle(), amount);
+            log.info("Counter loan issued already overdue: loan={} daysLate={} fine={}", loan.getId(), daysLate, amount);
+        }
 
         reservationRepository
                 .findFirstByBookAndStatusOrderByQueuePositionAsc(copy.getBook(), ReservationStatus.NOTIFIED)
