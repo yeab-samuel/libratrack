@@ -549,6 +549,31 @@ function StarRating({ value, onChange, readonly }) {
 }
 
 /* ─── LOGIN ───────────────────────────────────────────────── */
+/* ─── DEMO CREDENTIALS (for reviewers/visitors) ───────────── */
+function DemoCredentials() {
+  return (
+    <div style={{
+      border: "1px solid var(--border)",
+      padding: "1rem 1.15rem",
+      marginBottom: "1.75rem",
+    }}>
+      <div className="field-hint" style={{ marginBottom: ".55rem" }}>
+        For reviewers — try the demo
+      </div>
+      <div style={{ fontSize: ".88rem", lineHeight: 1.7 }}>
+        <div>
+          <span className="mono" style={{ color: "var(--accent)", fontWeight: 500 }}>ADMIN</span>
+          {"  "}ADM/001/00 · Admin1234!
+        </div>
+        <div>
+          <span className="mono" style={{ color: "var(--ok)", fontWeight: 500 }}>STUDENT</span>
+          {"  "}DEMO/0001/26 · Demo1234!
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }) {
   const [form, setForm]       = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -586,6 +611,7 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Sign in to<br/>your account</h1>
+        <DemoCredentials />
         {successMessage && <div className="msg msg-ok" style={{ marginBottom: "1.25rem" }}>{successMessage}</div>}
         <form onSubmit={handle}>
           <div className="field">
@@ -646,6 +672,7 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Create<br/>an account</h1>
+        <DemoCredentials />
         <form onSubmit={handle}>
           <div className="field">
             <label>Full Name</label>

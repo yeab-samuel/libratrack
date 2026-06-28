@@ -7,6 +7,7 @@ import com.libratrack.entity.User;
 import com.libratrack.service.BookRatingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,26 +29,26 @@ public class BookRatingController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('STUDENT','FACULTY')")
-    public RatingSummaryDTO submitRating(
+    public ResponseEntity<RatingSummaryDTO> submitRating(
             @PathVariable Long bookId,
             @Valid @RequestBody BookRatingRequest req,
             Authentication auth) {
         User user = (User) auth.getPrincipal();
-        return bookRatingService.submitRating(bookId, req.stars(), req.reviewText(), user);
+        return ResponseEntity.ok(
+                bookRatingService.submitRating(bookId, req.stars(), req.reviewText(), user));
     }
 
     @GetMapping
-    public RatingSummaryDTO getRatingSummary(
+    public ResponseEntity<RatingSummaryDTO> getRatingSummary(
             @PathVariable Long bookId,
             Authentication auth) {
         Long memberId = (auth != null && auth.getPrincipal() instanceof User u)
                 ? u.getId() : null;
-        return bookRatingService.getSummary(bookId, memberId);
+        return ResponseEntity.ok(bookRatingService.getSummary(bookId, memberId));
     }
 
-    /** Returns individual reviews with text — used by the book detail panel. */
     @GetMapping("/reviews")
-    public List<BookRatingDTO> getReviews(@PathVariable Long bookId) {
-        return bookRatingService.getReviews(bookId);
+    public ResponseEntity<List<BookRatingDTO>> getReviews(@PathVariable Long bookId) {
+        return ResponseEntity.ok(bookRatingService.getReviews(bookId));
     }
 }
