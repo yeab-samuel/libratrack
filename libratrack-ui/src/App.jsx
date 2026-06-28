@@ -152,12 +152,12 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 }
 .theme-btn-icon:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Fixed toggle for auth pages (top-right corner) */
+/* Fixed toggle for auth pages (top-right corner) — also used post-login */
 .auth-theme-btn {
   position: fixed;
-  top: 1.25rem;
-  right: 1.25rem;
-  z-index: 200;
+  top: .85rem;
+  right: 1rem;
+  z-index: 150;
 }
 
 /* ── Auth shell ── */
@@ -216,7 +216,6 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .sidebar-wm-actions { display: flex; align-items: center; gap: .5rem; }
 
 /* Mobile-only close (✕) button inside the open sidebar — hidden on desktop */
-.mobile-sidebar-close { display: none; }
 
 .nav-section-label { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--border); margin: 1.25rem 0 .4rem; }
 .nav-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'EB Garamond', serif; font-size: .975rem; color: var(--muted); padding: .35rem 0; transition: color .12s; letter-spacing: .01em; }
@@ -338,18 +337,20 @@ tr:hover td { background: rgba(160,78,31,.03); }
     box-shadow: none; z-index: 100;
   }
   .sidebar.open { left: 0; box-shadow: 6px 0 24px rgba(0,0,0,.22); }
-  /* Show the in-sidebar ✕ close button only once the sidebar is open on mobile */
-  .sidebar.open .mobile-sidebar-close { display: flex; }
   .mobile-overlay {
     display: block; position: fixed; inset: 0;
     background: rgba(0,0,0,.5); z-index: 99;
     animation: fadeIn .18s ease;
   }
-  .main { margin-left: 0 !important; width: 100%; max-width: 100%; padding: 0 1rem 2rem; }
+  .main { margin-left: 0 !important; width: 100%; max-width: 100%; padding: 52px 1rem 2rem; }
   .mobile-topbar {
     display: flex; align-items: center; gap: .75rem;
-    padding: .9rem 0 .75rem; margin-bottom: .5rem;
+    padding: 0 1rem;
+    height: 52px;
+    position: fixed; top: 0; left: 0; right: 0;
+    background: var(--paper);
     border-bottom: 1px solid var(--border);
+    z-index: 150;
   }
   .mobile-menu-btn {
     display: flex; align-items: center; justify-content: center;
@@ -358,6 +359,12 @@ tr:hover td { background: rgba(160,78,31,.03); }
     transition: border-color .15s, color .15s;
   }
   .mobile-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mobile-menu-btn span {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+  line-height: 1;
+}
+.mobile-menu-btn.sidebar-open span { transform: rotate(90deg); }
   .mobile-topbar-title {
     font-size: .72rem; font-weight: 600; letter-spacing: .2em;
     text-transform: uppercase; line-height: 1.5;
@@ -549,31 +556,6 @@ function StarRating({ value, onChange, readonly }) {
 }
 
 /* ─── LOGIN ───────────────────────────────────────────────── */
-/* ─── DEMO CREDENTIALS (for reviewers/visitors) ───────────── */
-function DemoCredentials() {
-  return (
-    <div style={{
-      border: "1px solid var(--border)",
-      padding: "1rem 1.15rem",
-      marginBottom: "1.75rem",
-    }}>
-      <div className="field-hint" style={{ marginBottom: ".55rem" }}>
-        For reviewers — try the demo
-      </div>
-      <div style={{ fontSize: ".88rem", lineHeight: 1.7 }}>
-        <div>
-          <span className="mono" style={{ color: "var(--accent)", fontWeight: 500 }}>ADMIN</span>
-          {"  "}ADM/001/00 · Admin1234!
-        </div>
-        <div>
-          <span className="mono" style={{ color: "var(--ok)", fontWeight: 500 }}>STUDENT</span>
-          {"  "}DEMO/0001/26 · Demo1234!
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }) {
   const [form, setForm]       = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -611,7 +593,6 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Sign in to<br/>your account</h1>
-        <DemoCredentials />
         {successMessage && <div className="msg msg-ok" style={{ marginBottom: "1.25rem" }}>{successMessage}</div>}
         <form onSubmit={handle}>
           <div className="field">
@@ -636,6 +617,10 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
         </form>
         <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           No account? <button className="link-action" onClick={onRegister}>Register here</button>
+        </p>
+        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".6rem", color:"var(--border)", lineHeight:2, letterSpacing:".04em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
+          demo — admin: ADM/001/00 · Admin1234!<br/>
+          demo — student: DEMO/0001/26 · Demo1234!
         </p>
       </div>
     </div>
@@ -672,7 +657,6 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Create<br/>an account</h1>
-        <DemoCredentials />
         <form onSubmit={handle}>
           <div className="field">
             <label>Full Name</label>
@@ -710,6 +694,9 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
         </form>
         <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           Have an account? <button className="link-action" onClick={onBack}>Sign in</button>
+        </p>
+        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".6rem", color:"var(--border)", lineHeight:2, letterSpacing:".04em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
+          demo student already registered: DEMO/0001/26 · Demo1234!
         </p>
       </div>
     </div>
@@ -1964,7 +1951,7 @@ function RegistryPage({ auth }) {
 }
 
 /* ─── SIDEBAR ─────────────────────────────────────────────── */
-function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme, open, onClose }) {
+function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
   const { role, username, universityId } = auth;
   const isAdmin      = role === "ADMIN";
   const isLibOrAdmin = ["ADMIN","LIBRARIAN"].includes(role);
@@ -1976,29 +1963,9 @@ function Sidebar({ auth, page, onPage, onLogout, theme, onToggleTheme, open, onC
     <>
       {open && <div className="mobile-overlay" onClick={onClose} />}
       <nav className={`sidebar${open ? " open" : ""}`}>
-      {/* ── Wordmark + theme toggle (+ mobile close ✕) in one row at the very top ── */}
+      {/* ── Wordmark row ── */}
       <div className="sidebar-wm-row">
         <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
-        <div className="sidebar-wm-actions">
-          <button
-            className="theme-btn-icon"
-            onClick={onToggleTheme}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
-          {/* Mobile-only — lets the person close the sidebar with an explicit ✕
-              instead of having to tap the dimmed area outside it */}
-          <button
-            className="theme-btn-icon mobile-sidebar-close"
-            onClick={onClose}
-            title="Close menu"
-            aria-label="Close menu"
-          >
-            ✕
-          </button>
-        </div>
       </div>
 
       <div>{link("Catalogue", "books")}</div>
@@ -2074,7 +2041,13 @@ export default function LibraTrack() {
   /* Mobile topbar injected at the top of each page via context-free wrapper */
   const MobileTopbar = () => (
     <div className="mobile-topbar">
-      <button className="mobile-menu-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Open menu">☰</button>
+      <button
+        className={`mobile-menu-btn${sidebarOpen ? " sidebar-open" : ""}`}
+        onClick={() => setSidebarOpen(o => !o)}
+        aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+      >
+        <span>{sidebarOpen ? "✕" : "☰"}</span>
+      </button>
       <div className="mobile-topbar-title">LIBRA<em>TRACK</em></div>
     </div>
   );
@@ -2100,8 +2073,16 @@ export default function LibraTrack() {
             />
       ) : (
         <div className="app">
+          {/* Theme toggle — fixed top-right always, consistent with auth pages */}
+          <button
+            className="theme-btn-icon auth-theme-btn"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <Sidebar auth={auth} page={page} onPage={setPage} onLogout={handleLogout}
-            theme={theme} onToggleTheme={toggleTheme}
             open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <div style={{ flex:1, minWidth:0, marginLeft:"var(--sw)" }}>
             <MobileTopbar />

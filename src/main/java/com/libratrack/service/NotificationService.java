@@ -36,11 +36,20 @@ public class NotificationService {
     private static final String RESEND_URL  = "https://api.resend.com/emails";
     private static final String FROM_HEADER = "LibraTrack System <onboarding@resend.dev>";
 
+    /** Returns true when mail is configured and enabled. */
+    private boolean isEnabled() {
+        return mailEnabled && apiKey != null && !apiKey.isBlank();
+    }
+
     /** Notify member that their reserved copy is ready to collect. */
     @Async
     public void sendReservationReady(User member, Book book, LocalDate expiresAt) {
         log.info("[NOTIFY] Reservation ready — {} ({}) → \"{}\" collect by {}",
                 member.getFullName(), member.getEmail(), book.getTitle(), expiresAt);
+        if (!isEnabled()) {
+            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", member.getEmail());
+            return;
+        }
         send(member.getEmail(),
                 "LibraTrack — Book Ready: " + book.getTitle(),
                 String.format(
@@ -62,6 +71,10 @@ public class NotificationService {
     public void sendReservationExpired(User member, Book book) {
         log.info("[NOTIFY] Reservation expired — {} ({}) for \"{}\"",
                 member.getFullName(), member.getEmail(), book.getTitle());
+        if (!isEnabled()) {
+            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", member.getEmail());
+            return;
+        }
         send(member.getEmail(),
                 "LibraTrack — Reservation Expired: " + book.getTitle(),
                 String.format(
@@ -80,6 +93,10 @@ public class NotificationService {
     public void sendOverdueFineNotice(User member, String bookTitle, BigDecimal amount) {
         log.info("[NOTIFY] Overdue fine — {} ({}) — {} — ${}",
                 member.getFullName(), member.getEmail(), bookTitle, amount);
+        if (!isEnabled()) {
+            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", member.getEmail());
+            return;
+        }
         send(member.getEmail(),
                 "LibraTrack — Overdue Fine: " + bookTitle,
                 String.format(
@@ -99,10 +116,6 @@ public class NotificationService {
      * without needing to mock the JDK HttpClient.
      */
     void send(String to, String subject, String text) {
-        if (!mailEnabled || apiKey == null || apiKey.isBlank()) {
-            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", to);
-            return;
-        }
         try {
             String escaped = text.replace("\\", "\\\\")
                     .replace("\"", "\\\"")
