@@ -618,9 +618,9 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
         <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           No account? <button className="link-action" onClick={onRegister}>Register here</button>
         </p>
-        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".6rem", color:"var(--border)", lineHeight:2, letterSpacing:".04em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
-          demo — admin: ADM/001/00 · Admin1234!<br/>
-          demo — student: DEMO/0001/26 · Demo1234!
+        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".78rem", color:"var(--muted)", lineHeight:1.9, letterSpacing:".03em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
+          demo — admin: <strong>ADM/001/00</strong> · Admin1234!<br/>
+          demo — student: <strong>DEMO/0001/26</strong> · Demo1234!
         </p>
       </div>
     </div>
@@ -695,8 +695,8 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
         <p style={{ marginTop:"1.5rem", fontSize:".9rem", color:"var(--muted)" }}>
           Have an account? <button className="link-action" onClick={onBack}>Sign in</button>
         </p>
-        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".6rem", color:"var(--border)", lineHeight:2, letterSpacing:".04em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
-          demo student already registered: DEMO/0001/26 · Demo1234!
+        <p style={{ marginTop:"2rem", fontFamily:"'DM Mono',monospace", fontSize:".78rem", color:"var(--muted)", lineHeight:1.9, letterSpacing:".03em", borderTop:"1px solid var(--border)", paddingTop:".75rem" }}>
+          demo student already registered: <strong>DEMO/0001/26</strong> · Demo1234!
         </p>
       </div>
     </div>
