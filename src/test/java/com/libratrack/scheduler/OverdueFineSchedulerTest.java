@@ -51,9 +51,14 @@ class OverdueFineSchedulerTest {
         copy = BookCopy.builder()
                 .id(1L).book(book).copyNumber("C-001")
                 .condition(CopyCondition.GOOD).status(CopyStatus.ON_LOAN).build();
+
+        // Default Phase 2 stub — most tests don't exercise it; return empty so
+        // Phase 2 completes without side-effects and tests stay focused.
+        lenient().when(loanRepository.findAllByStatus(LoanStatus.OVERDUE))
+                .thenReturn(List.of());
     }
 
-    // ── calculateOverdueFines ────────────────────────────────────────────────
+    // ── calculateOverdueFines — Phase 1 (ACTIVE → OVERDUE) ──────────────────
 
     @Test
     void calculateOverdueFines_NoOverdueLoans_DoesNothing() {
@@ -71,8 +76,7 @@ class OverdueFineSchedulerTest {
     void calculateOverdueFines_WithinGracePeriod_LeavesLoanActiveAndDoesNotFine() {
         // 1 day late and 2 days late are both within the grace period per
         // FineCalculator — neither should be touched at all: no status
-        // change, no fine, no notification. They'll be re-evaluated again
-        // on a later run.
+        // change, no fine, no notification. They'll be re-evaluated on a later run.
         Loan oneDay = Loan.builder()
                 .id(1L).member(member).bookCopy(copy)
                 .dueDate(LocalDate.now().minusDays(1)).status(LoanStatus.ACTIVE).build();
@@ -186,6 +190,84 @@ class OverdueFineSchedulerTest {
         verify(fineRepository, times(2)).save(any());
         verify(notificationService, times(2))
                 .sendOverdueFineNotice(any(), any(), any());
+    }
+
+    // ── calculateOverdueFines — Phase 2 (OVERDUE → silent recalculation) ────
+
+    @Test
+    void calculateOverdueFines_AlreadyOverdueLoan_RecalculatesFineWithoutNotification() {
+        // This is the core bug scenario: a loan that went overdue two nights
+        // ago. Phase 1 won't see it (it's OVERDUE, not ACTIVE). Phase 2 must
+        // pick it up and update the fine amount — without sending another email.
+        Loan overdуeLoan = Loan.builder()
+                .id(10L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(5)).status(LoanStatus.OVERDUE).build();
+        FineRecord existingFine = FineRecord.builder()
+                .id(20L).loan(overdуeLoan).member(member)
+                .amount(new BigDecimal("0.50"))   // frozen at day-3 amount
+                .status(FineStatus.UNPAID).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of());
+        when(loanRepository.findAllByStatus(LoanStatus.OVERDUE))
+                .thenReturn(List.of(overdуeLoan));
+        when(fineRepository.findByLoan(overdуeLoan)).thenReturn(Optional.of(existingFine));
+        when(fineCalculator.calculate(5)).thenReturn(new BigDecimal("1.50"));
+
+        scheduler.calculateOverdueFines();
+
+        // Fine amount must reflect today's full accrual, not the frozen day-3 amount
+        assertEquals(0, existingFine.getAmount().compareTo(new BigDecimal("1.50")),
+                "Phase 2 must update the fine to the current accrued amount");
+        verify(fineRepository).save(existingFine);
+
+        // Crucially: no second email — the member was already notified on night 1
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void calculateOverdueFines_AlreadyOverduePaidFine_SkipsUpdate() {
+        // A PAID fine should never be re-opened by the nightly recalculation.
+        Loan overdуeLoan = Loan.builder()
+                .id(11L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(4)).status(LoanStatus.OVERDUE).build();
+        FineRecord paidFine = FineRecord.builder()
+                .id(21L).loan(overdуeLoan).member(member)
+                .amount(new BigDecimal("1.00"))
+                .status(FineStatus.PAID).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of());
+        when(loanRepository.findAllByStatus(LoanStatus.OVERDUE))
+                .thenReturn(List.of(overdуeLoan));
+        when(fineRepository.findByLoan(overdуeLoan)).thenReturn(Optional.of(paidFine));
+
+        scheduler.calculateOverdueFines();
+
+        // Amount must not change and must not be saved
+        assertEquals(0, paidFine.getAmount().compareTo(new BigDecimal("1.00")));
+        verify(fineRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void calculateOverdueFines_AlreadyOverdueNoFineRecord_DoesNotCreateDuplicate() {
+        // Edge case: OVERDUE loan with no fine record (e.g. data inconsistency).
+        // Phase 2 must not create a new record — only Phase 1 does that.
+        Loan overdуeLoan = Loan.builder()
+                .id(12L).member(member).bookCopy(copy)
+                .dueDate(LocalDate.now().minusDays(4)).status(LoanStatus.OVERDUE).build();
+
+        when(loanRepository.findAllByStatusAndDueDateBefore(eq(LoanStatus.ACTIVE), any(LocalDate.class)))
+                .thenReturn(List.of());
+        when(loanRepository.findAllByStatus(LoanStatus.OVERDUE))
+                .thenReturn(List.of(overdуeLoan));
+        when(fineRepository.findByLoan(overdуeLoan)).thenReturn(Optional.empty());
+
+        scheduler.calculateOverdueFines();
+
+        verify(fineRepository, never()).save(any());
+        verifyNoInteractions(notificationService);
     }
 
     // ── expireStaleReservations ──────────────────────────────────────────────

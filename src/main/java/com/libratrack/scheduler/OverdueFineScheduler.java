@@ -22,18 +22,32 @@ public class OverdueFineScheduler {
     private final FineCalculator fineCalculator;
 
     /**
-     * Runs at 01:00 every night — marks loans overdue and accrues fines using
-     * the shared, tiered FineCalculator (grace period, then normal rate, then
-     * double rate once significantly overdue). A loan within the grace
-     * window is left untouched and simply re-evaluated on the next nightly
-     * run; only once it's genuinely overdue does it flip to OVERDUE.
+     * Runs at 01:00 every night. Two phases:
+     *
+     * Phase 1 — ACTIVE loans that are now past their due date:
+     *   Flips them to OVERDUE, creates a fine record (or updates if one somehow
+     *   already exists), and sends a one-time overdue notification email.
+     *   Loans still inside the grace window are skipped and re-evaluated on the
+     *   next nightly run.
+     *
+     * Phase 2 — Already-OVERDUE loans:
+     *   Recalculates the accruing fine for every UNPAID overdue loan so the
+     *   amount actually grows day-over-day. No email is sent here — the member
+     *   was already notified on the night they first went overdue.
+     *
+     * Without Phase 2, the query in Phase 1 only ever catches a loan once
+     * (ACTIVE → OVERDUE), so the fine amount would freeze after the very first
+     * night and never accrue again.
      */
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void calculateOverdueFines() {
-        var loans = loanRepository.findAllByStatusAndDueDateBefore(LoanStatus.ACTIVE, LocalDate.now());
-        log.info("Overdue scheduler: {} loans to process", loans.size());
-        for (Loan loan : loans) {
+
+        // ── Phase 1: newly-overdue (ACTIVE → OVERDUE) ────────────────────────
+        var newlyOverdue = loanRepository.findAllByStatusAndDueDateBefore(LoanStatus.ACTIVE, LocalDate.now());
+        log.info("Overdue scheduler Phase 1: {} newly-overdue loans", newlyOverdue.size());
+
+        for (Loan loan : newlyOverdue) {
             long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
             if (!fineCalculator.isBillable(daysLate)) continue;
 
@@ -47,8 +61,24 @@ public class OverdueFineScheduler {
                     () -> fineRepository.save(FineRecord.builder()
                             .loan(loan).member(loan.getMember()).amount(amount).build())
             );
+            // One-time notification — sent only on the first night a loan goes overdue.
             notificationService.sendOverdueFineNotice(
                     loan.getMember(), loan.getBookCopy().getBook().getTitle(), amount);
+        }
+
+        // ── Phase 2: already-overdue — recalculate daily without re-notifying ─
+        var alreadyOverdue = loanRepository.findAllByStatus(LoanStatus.OVERDUE);
+        log.info("Overdue scheduler Phase 2: {} already-overdue loans to recalculate", alreadyOverdue.size());
+
+        for (Loan loan : alreadyOverdue) {
+            long daysLate = ChronoUnit.DAYS.between(loan.getDueDate(), LocalDate.now());
+            BigDecimal updatedAmount = fineCalculator.calculate(daysLate);
+            fineRepository.findByLoan(loan).ifPresent(fine -> {
+                if (fine.getStatus() == FineStatus.UNPAID) {
+                    fine.setAmount(updatedAmount);
+                    fineRepository.save(fine);
+                }
+            });
         }
     }
 

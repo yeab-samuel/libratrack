@@ -11,10 +11,12 @@ public interface LoanRepository extends JpaRepository<Loan,Long> {
     Page<Loan> findByMember(@Param("member") User member, Pageable pageable);
     @Query("SELECT l FROM Loan l JOIN FETCH l.bookCopy bc JOIN FETCH bc.book JOIN FETCH l.member WHERE l.status = :status")
     Page<Loan> findByStatus(@Param("status") LoanStatus status, Pageable pageable);
-    List<Loan> findAllByStatusAndDueDateBefore(LoanStatus status,LocalDate date);
-    long countByMemberAndStatus(User member,LoanStatus status);
+    List<Loan> findAllByStatusAndDueDateBefore(LoanStatus status, LocalDate date);
+    /** Used by the nightly scheduler Phase 2 to recalculate fines on already-OVERDUE loans. */
+    List<Loan> findAllByStatus(LoanStatus status);
+    long countByMemberAndStatus(User member, LoanStatus status);
     @Query("SELECT l FROM Loan l JOIN FETCH l.bookCopy bc JOIN FETCH bc.book JOIN FETCH l.member WHERE (:memberId IS NULL OR l.member.id=:memberId) AND (:status IS NULL OR l.status=:status)")
-    Page<Loan> findWithFilters(@Param("memberId")Long memberId,@Param("status")LoanStatus status,Pageable pageable);
+    Page<Loan> findWithFilters(@Param("memberId") Long memberId, @Param("status") LoanStatus status, Pageable pageable);
 
     /** Used by BookRatingService to verify the member has returned this book before allowing rating. */
     @Query("SELECT CASE WHEN COUNT(l) > 0 THEN true ELSE false END FROM Loan l " +
