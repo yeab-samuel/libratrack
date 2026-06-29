@@ -35,11 +35,14 @@ const CSS = `
   --info: #144272; --sw: 228px;
 }
 html[data-theme="dark"] {
-  --ink:    #E2DED7;
-  --paper:  #111110;
-  --accent: #A04E1F;
-  --muted:  #6B6865;
-  --border: #2A2826;
+  /* ── Mirror the light mode logic, just inverted ──────────
+     Light: near-black ink (#0E0D0B) on near-white paper (#F8F6F2)
+     Dark:  near-white ink on near-black paper — same muted accent    */
+  --ink:    #E2DED7;   /* mirrors --paper from light mode              */
+  --paper:  #111110;   /* mirrors --ink from light mode                */
+  --accent: #A04E1F;   /* same terracotta as light — no saturation bump */
+  --muted:  #6B6865;   /* desaturated mid-gray                         */
+  --border: #2A2826;   /* barely there — same role as #DDD9D2 in light */
   --ok:     #3A8A58;
   --bad:    #AA3232;
   --warn:   #926300;
@@ -47,19 +50,26 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
+/* ── Three depth layers ───────────────────────────────────
+   Layer 0  #111110  page background   (--paper)
+   Layer 1  #181716  sidebar, cards    — just barely lifted
+   Layer 2  #1F1E1C  dialogs           — clearly elevated   ── */
 html[data-theme="dark"] .sidebar  { background: #181716; border-right-color: #2A2826; }
 html[data-theme="dark"] .dialog   { background: #1F1E1C; border-color: #3C3A37; }
 html[data-theme="dark"] .overlay  { background: rgba(5,4,4,.88); }
 
+/* ── Book cards ── */
 html[data-theme="dark"] .books-grid { background: #2A2826; border-color: #2A2826; }
 html[data-theme="dark"] .book-card  { background: #181716; border-color: #2A2826; }
 html[data-theme="dark"] .book-card:hover { background: #1D1C1A; }
 html[data-theme="dark"] .book-card-meta  { border-top-color: #2A2826; }
 
+/* ── Tables ── */
 html[data-theme="dark"] th          { border-bottom-color: #2A2826; }
 html[data-theme="dark"] td          { border-bottom-color: #1C1B19; }
 html[data-theme="dark"] tr:hover td { background: rgba(160,78,31,.06); }
 
+/* ── Inputs — neutral dark fill, same subtle border logic as light ── */
 html[data-theme="dark"] .field input,
 html[data-theme="dark"] .field select,
 html[data-theme="dark"] .field textarea {
@@ -71,16 +81,19 @@ html[data-theme="dark"] .field input:focus,
 html[data-theme="dark"] .field select:focus,
 html[data-theme="dark"] .field textarea:focus { border-color: #E2DED7; }
 
+/* ── Fix select dropdown arrow for dark mode (light-colored arrow) ── */
 html[data-theme="dark"] .field select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23E2DED7'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right .75rem center;
 }
+/* Native option elements in dark mode */
 html[data-theme="dark"] .field select option {
   background: #1F1E1C;
   color: #E2DED7;
 }
 
+/* ── Buttons — desaturated, matching the light mode's restraint ── */
 html[data-theme="dark"] .btn {
   background: #1E1D1B;
   border-color: #3C3A37;
@@ -102,9 +115,11 @@ html[data-theme="dark"] .btn-ghost:hover:not(:disabled) {
   color: #E2DED7;
 }
 
+/* ── Inline messages ── */
 html[data-theme="dark"] .msg-err { background: #200F0F; border-color: #AA3232; }
 html[data-theme="dark"] .msg-ok  { background: #0C1A11; border-color: #3A8A58; }
 
+/* ── Miscellaneous ── */
 html[data-theme="dark"] .welcome-toast      { background: rgba(42,95,62,.96); }
 html[data-theme="dark"] .theme-btn-icon     { background: #181716; border-color: #2A2826; }
 html[data-theme="dark"] .nav-section-label  { color: #3C3A37; }
@@ -118,6 +133,7 @@ html { font-size: 16px; }
 body { min-height: 100vh; background: var(--paper); color: var(--ink); font-family: 'EB Garamond', Georgia, serif; -webkit-font-smoothing: antialiased; }
 #root { min-height: 100vh; }
 
+/* ── Theme toggle (compact icon square) ── */
 .theme-btn-icon {
   display: inline-flex;
   align-items: center;
@@ -136,6 +152,7 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 }
 .theme-btn-icon:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Fixed toggle for auth pages (top-right corner) — also used post-login */
 .auth-theme-btn {
   position: fixed;
   top: .85rem;
@@ -143,11 +160,13 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
   z-index: 150;
 }
 
+/* ── Auth shell ── */
 .auth-shell { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3rem 2rem 4rem; overflow-y: auto; }
 .auth-card { width: 100%; max-width: 400px; animation: fadeUp .35s ease both; }
 .auth-wordmark { font-size: .8rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 3rem; display: flex; align-items: baseline; gap: .35rem; }
 .auth-wordmark em { color: var(--accent); font-style: normal; }
 
+/* ── Auth heading — explicit color + font so light mode is never invisible ── */
 .auth-heading {
   font-family: 'EB Garamond', Georgia, serif;
   font-size: 2rem;
@@ -182,8 +201,10 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .msg-ok  { color: var(--ok);  border-color: var(--ok);  background: #f0faf4; }
 .app { display: flex; min-height: 100vh; overflow-x: hidden; }
 
+/* ── Sidebar ── */
 .sidebar { width: var(--sw); min-height: 100vh; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.5rem; position: fixed; top: 0; left: 0; bottom: 0; background: var(--paper); z-index: 20; overflow-y: auto; flex-shrink: 0; }
 
+/* Wordmark row: brand name left, theme toggle right */
 .sidebar-wm-row {
   display: flex;
   align-items: center;
@@ -193,6 +214,8 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .sidebar-wm { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; line-height: 1.5; }
 .sidebar-wm em { color: var(--accent); font-style: normal; }
 .sidebar-wm-actions { display: flex; align-items: center; gap: .5rem; }
+
+/* Mobile-only close (✕) button inside the open sidebar — hidden on desktop */
 
 .nav-section-label { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--border); margin: 1.25rem 0 .4rem; }
 .nav-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'EB Garamond', serif; font-size: .975rem; color: var(--muted); padding: .35rem 0; transition: color .12s; letter-spacing: .01em; }
@@ -204,10 +227,11 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .user-chip strong { display: block; color: var(--ink); font-weight: 400; font-size: .7rem; }
 .user-chip .uid { display: block; color: var(--accent); font-size: .68rem; letter-spacing: .06em; }
 
-/* FIXED: Changed from fadeUp to fadeIn to prevent transform from breaking fixed positioning */
+/* ── Main content ── */
 .main { flex: 1; padding: 2.5rem 3rem; max-width: 1040px; min-width: 0; overflow-x: hidden; animation: fadeIn .3s ease both; }
 .page-head { margin-bottom: 1.75rem; padding-bottom: .9rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
+/* ── Page title — explicit color + font for consistent rendering across themes ── */
 .page-title {
   font-family: 'EB Garamond', Georgia, serif;
   font-size: 1.8rem;
@@ -237,7 +261,7 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .pager { display: flex; align-items: center; gap: .6rem; margin-top: 1.5rem; font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted); }
 .empty { text-align: center; padding: 5rem 2rem; color: var(--muted); font-style: italic; font-size: 1.15rem; }
 .loading { text-align: center; padding: 4rem 2rem; font-family: 'DM Mono', monospace; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--border); animation: pulse 1.4s infinite; }
-.overlay { position: fixed; inset: 0; background: rgba(14,13,11,.45); display: grid; place-items: center; z-index: 200; padding: 1rem; animation: fadeIn .18s ease; overflow-y: auto; }
+.overlay { position: fixed; inset: 0; background: rgba(14,13,11,.45); display: grid; place-items: center; z-index: 200; padding: 1rem 1rem 1rem calc(var(--sw) + 1rem); animation: fadeIn .18s ease; overflow-y: auto; }
 .dialog { background: var(--paper); border: 1px solid var(--border); padding: 2rem; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; animation: fadeUp .22s ease; }
 .dialog-title { font-size: 1.3rem; font-weight: 400; margin-bottom: 1.5rem; font-family: 'EB Garamond', Georgia, serif; color: var(--ink); }
 .dialog-actions { display: flex; gap: .65rem; margin-top: 1.5rem; justify-content: flex-end; }
@@ -289,6 +313,7 @@ tr:hover td { background: rgba(160,78,31,.03); }
 @keyframes pulse { 0%, 100% { opacity: .6; } 50% { opacity: .2; } }
 @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
+/* ── Live fine styles ── */
 .live-fine-panel { border: 1px solid var(--bad); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; animation: fadeUp .3s ease both; }
 .live-fine-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: livePulse 1.4s ease-in-out infinite; flex-shrink: 0; }
@@ -300,6 +325,7 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .projected-fine.grace { color: var(--warn); }
 .projected-fine.zero { color: var(--muted); }
 
+/* ── Mobile responsive ── */
 .mobile-topbar { display: none; }
 .mobile-overlay { display: none; }
 .mobile-menu-btn { display: none; }
@@ -376,6 +402,7 @@ const daysUntil = (dateStr, now) => {
   return Math.round((targetMidnight - todayMidnight) / 86400000);
 };
 
+/* Mirrors backend FineCalculator — grace=2d, $0.50/d, doubles after 14d */
 const calcProjectedFine = (dueDateStr, now = new Date()) => {
   const DAILY = 0.50, GRACE = 2, ESCALATION = 14;
   if (!dueDateStr) return null;
@@ -383,7 +410,7 @@ const calcProjectedFine = (dueDateStr, now = new Date()) => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
   const daysLate = Math.round((today - dueDay) / 86400000);
-  if (daysLate <= 0) return null;
+  if (daysLate <= 0) return null;           // not yet late
   if (daysLate <= GRACE) return { amount: 0, daysLate, inGrace: true };
   const normalDays = Math.max(0, Math.min(daysLate, ESCALATION) - GRACE);
   const doubleDays = Math.max(0, daysLate - Math.max(GRACE, ESCALATION));
@@ -445,6 +472,7 @@ function Pager({ page, totalPages, onPage }) {
   );
 }
 
+/* ─── PROJECTED FINE (inline, for loan rows) ──────────────── */
 function ProjectedFine({ dueDate, now }) {
   const fine = calcProjectedFine(dueDate, now);
   if (!fine) return <span className="projected-fine zero">—</span>;
@@ -460,6 +488,7 @@ function ProjectedFine({ dueDate, now }) {
   );
 }
 
+/* ─── LIVE FINE PANEL (top of FinesPage for members) ─────── */
 function LiveFinePanel({ rows, now }) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -507,6 +536,7 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+/* ─── STAR RATING ─────────────────────────────────────────── */
 function StarRating({ value, onChange, readonly }) {
   const [hover, setHover] = useState(0);
   const effective = hover || value || 0;
@@ -525,6 +555,7 @@ function StarRating({ value, onChange, readonly }) {
   );
 }
 
+/* ─── LOGIN ───────────────────────────────────────────────── */
 function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }) {
   const [form, setForm]       = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -549,6 +580,7 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
 
   return (
     <div className="auth-shell">
+      {/* Theme toggle — fixed top-right, visible on auth pages */}
       <button
         className="theme-btn-icon auth-theme-btn"
         onClick={onToggleTheme}
@@ -595,6 +627,7 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
   );
 }
 
+/* ─── REGISTER ────────────────────────────────────────────── */
 function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
   const [form, setForm] = useState({ fullName:"", email:"", password:"", role:"STUDENT", universityId:"" });
   const [loading, setLoading] = useState(false);
@@ -611,6 +644,7 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
 
   return (
     <div className="auth-shell">
+      {/* Theme toggle — fixed top-right, visible on auth pages */}
       <button
         className="theme-btn-icon auth-theme-btn"
         onClick={onToggleTheme}
@@ -669,6 +703,7 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
   );
 }
 
+/* ─── BOOK DETAIL MODAL ───────────────────────────────────── */
 function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
   const [reviews, setReviews]   = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
@@ -761,6 +796,7 @@ function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
   );
 }
 
+/* ─── BOOK CARD ───────────────────────────────────────────── */
 function BookCard({ book, role, onBorrow, onReserve, onDetail }) {
   const available    = book.availableCopies ?? 0;
   const hasAvailable = available > 0;
@@ -806,6 +842,7 @@ function BookCard({ book, role, onBorrow, onReserve, onDetail }) {
   );
 }
 
+/* ─── BORROW MODAL ────────────────────────────────────────── */
 function BorrowModal({ book, token, role, onClose, onDone }) {
   const today = new Date();
   const maxDays = role === "FACULTY" ? 30 : 14;
@@ -868,6 +905,7 @@ function BorrowModal({ book, token, role, onClose, onDone }) {
   );
 }
 
+/* ─── BOOKS PAGE ──────────────────────────────────────────── */
 function BooksPage({ auth }) {
   const { token, role } = auth;
   const canManage = ["ADMIN","LIBRARIAN"].includes(role);
@@ -1028,6 +1066,7 @@ function CreateBookModal({ onSubmit, onClose, categories }) {
   );
 }
 
+/* ─── REVIEW INPUT (for returned loans) ──────────────────── */
 function ReviewInput({ bookId, token }) {
   const [stars, setStars]     = useState(0);
   const [text, setText]       = useState("");
@@ -1085,6 +1124,7 @@ function ReviewInput({ bookId, token }) {
   );
 }
 
+/* ─── LOANS PAGE ──────────────────────────────────────────── */
 function LoansPage({ auth }) {
   const { token, role } = auth;
   const isMember  = ["STUDENT","FACULTY"].includes(role);
@@ -1203,6 +1243,7 @@ function IssueLoanModal({ token, onClose, onDone }) {
   const [loading, setLoading]     = useState(false);
   const [err, setErr]             = useState("");
 
+  /* ── Book search → pick a title → pick an available copy ───────── */
   const [bookQuery, setBookQuery]     = useState("");
   const [bookResults, setBookResults] = useState([]);
   const [bookSearching, setBookSearching] = useState(false);
@@ -1361,6 +1402,7 @@ function ExtendModal({ loan, onClose, onExtend }) {
   );
 }
 
+/* ─── RESERVATIONS PAGE ───────────────────────────────────── */
 function ReservationsPage({ auth }) {
   const { token, role } = auth;
   const isMember = ["STUDENT","FACULTY"].includes(role);
@@ -1452,6 +1494,7 @@ function ReservationsPage({ auth }) {
   );
 }
 
+/* ─── FINES PAGE ──────────────────────────────────────────── */
 function FinesPage({ auth }) {
   const { token, role } = auth;
   const isMember = ["STUDENT","FACULTY"].includes(role);
@@ -1572,6 +1615,7 @@ function WaiveForm({ fineId, onWaive, onClose }) {
   );
 }
 
+/* ─── REPORTS PAGE ────────────────────────────────────────── */
 function ReportsPage({ auth }) {
   const { token } = auth;
   const [overdue, setOverdue]     = useState([]);
@@ -1646,6 +1690,7 @@ function ReportsPage({ auth }) {
   );
 }
 
+/* ─── USERS PAGE ──────────────────────────────────────────── */
 function UsersPage({ auth }) {
   const { token } = auth;
   const [rows, setRows]       = useState([]);
@@ -1826,6 +1871,7 @@ function CreateStaffModal({ token, onClose, onDone }) {
   );
 }
 
+/* ─── REGISTRY PAGE ───────────────────────────────────────── */
 function RegistryPage({ auth }) {
   const { token } = auth;
   const [rows, setRows]   = useState([]);
@@ -1904,6 +1950,7 @@ function RegistryPage({ auth }) {
   );
 }
 
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
 function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
   const { role, username, universityId } = auth;
   const isAdmin      = role === "ADMIN";
@@ -1916,6 +1963,7 @@ function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
     <>
       {open && <div className="mobile-overlay" onClick={onClose} />}
       <nav className={`sidebar${open ? " open" : ""}`}>
+      {/* ── Wordmark row ── */}
       <div className="sidebar-wm-row">
         <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
       </div>
@@ -1940,6 +1988,7 @@ function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
         {link("Registry", "registry")}
       </>)}
 
+      {/* ── Footer: user info + sign out only (theme toggle moved to top) ── */}
       <div className="sidebar-foot">
         <div className="user-chip">
           <strong>{username}</strong>
@@ -1955,6 +2004,7 @@ function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
   );
 }
 
+/* ─── ROOT ────────────────────────────────────────────────── */
 export default function LibraTrack() {
   const [auth, setAuth]           = useState(null);
   const [screen, setScreen]       = useState("login");
@@ -1988,6 +2038,7 @@ export default function LibraTrack() {
     setSidebarOpen(false);
   };
 
+  /* Mobile topbar injected at the top of each page via context-free wrapper */
   const MobileTopbar = () => (
     <div className="mobile-topbar">
       <button
@@ -2022,6 +2073,7 @@ export default function LibraTrack() {
             />
       ) : (
         <div className="app">
+          {/* Theme toggle — fixed top-right always, consistent with auth pages */}
           <button
             className="theme-btn-icon auth-theme-btn"
             onClick={toggleTheme}
