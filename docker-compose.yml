@@ -22,11 +22,12 @@ services:
       db: {condition: service_healthy}
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      PORT: 8080
       DB_URL: jdbc:postgresql://db:5432/libratrack
       DB_USER: ${POSTGRES_USER:-libratrack}
       DB_PASS: ${POSTGRES_PASSWORD:-changeme}
       JWT_SECRET: ${JWT_SECRET}
-      DAILY_FINE_RATE: ${DAILY_FINE_RATE:-0.50}
+      FINE_DAILY_RATE: ${FINE_DAILY_RATE:-0.50}
       MAX_LOANS_STUDENT: ${MAX_LOANS_STUDENT:-3}
       MAX_LOANS_FACULTY: ${MAX_LOANS_FACULTY:-5}
     ports: ["8080:8080"]
