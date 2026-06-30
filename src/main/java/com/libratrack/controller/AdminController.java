@@ -1,5 +1,6 @@
 package com.libratrack.controller;
 import com.libratrack.dto.request.CreateStaffRequest;
+import com.libratrack.dto.request.ResetPasswordRequest;
 import com.libratrack.dto.request.UpdateUserNameRequest;
 import com.libratrack.dto.response.UserDTO;
 import com.libratrack.enums.Role;
@@ -18,7 +19,6 @@ public class AdminController {
     private final UserService userService;
     private final AuthService authService;
 
-    /** List all users with optional filters */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserDTO>> getUsers(
@@ -28,41 +28,30 @@ public class AdminController {
         return ResponseEntity.ok(userService.getUsers(role, active, pageable));
     }
 
-    /** Get a single user — lookup by ID */
     @GetMapping("/users/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    /** Find a user by their university ID (for counter lookup) */
     @GetMapping("/users/by-university-id")
     @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     public ResponseEntity<UserDTO> getUserByUniversityId(@RequestParam String universityId) {
         return ResponseEntity.ok(userService.getUserByUniversityId(universityId));
     }
 
-    /** Deactivate a user account */
     @PatchMapping("/users/{id}/deactivate")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> deactivateUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.deactivateUser(id));
     }
 
-    /** Reactivate a user account */
     @PatchMapping("/users/{id}/activate")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> activateUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.activateUser(id));
     }
 
-    /**
-     * Correct a user's full name on file (e.g. it doesn't match the
-     * registry for their university ID). Used after verifying the
-     * person's identity directly, rather than requiring the account to
-     * be deleted and re-registered — which would orphan their existing
-     * loan/fine/reservation history.
-     */
     @PatchMapping("/users/{id}/name")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateUserName(
@@ -70,7 +59,21 @@ public class AdminController {
         return ResponseEntity.ok(userService.updateFullName(id, req.fullName()));
     }
 
-    /** Create a LIBRARIAN or ADMIN staff account (no university ID needed) */
+    /**
+     * Admin resets any user's password directly.
+     * BCrypt is one-way — there is no "view password" endpoint.
+     * This is the correct pattern: admin sets a new known password,
+     * tells the user in person, user logs in and changes it themselves.
+     */
+    @PatchMapping("/users/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ResetPasswordRequest req) {
+        userService.resetPassword(id, req.newPassword());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/staff")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> createStaff(@Valid @RequestBody CreateStaffRequest req) {

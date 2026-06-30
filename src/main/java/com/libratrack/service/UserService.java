@@ -6,6 +6,7 @@ import com.libratrack.exception.ResourceNotFoundException;
 import com.libratrack.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public Page<UserDTO> getUsers(Role role, Boolean active, Pageable pageable) {
@@ -65,5 +67,19 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
         u.setFullName(fullName.trim());
         return authService.toDTO(userRepository.save(u));
+    }
+
+    /**
+     * Admin resets any user's password directly. BCrypt is one-way — there is
+     * no "view password" endpoint. This is the correct pattern: admin sets a
+     * new known password, tells the user in person, user logs in and changes
+     * it themselves.
+     */
+    @Transactional
+    public void resetPassword(Long id, String newPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

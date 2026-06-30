@@ -35,41 +35,27 @@ const CSS = `
   --info: #144272; --sw: 228px;
 }
 html[data-theme="dark"] {
-  /* ── Mirror the light mode logic, just inverted ──────────
-     Light: near-black ink (#0E0D0B) on near-white paper (#F8F6F2)
-     Dark:  near-white ink on near-black paper — same muted accent    */
-  --ink:    #E2DED7;   /* mirrors --paper from light mode              */
-  --paper:  #111110;   /* mirrors --ink from light mode                */
-  --accent: #A04E1F;   /* same terracotta as light — no saturation bump */
-  --muted:  #6B6865;   /* desaturated mid-gray                         */
-  --border: #2A2826;   /* barely there — same role as #DDD9D2 in light */
+  --ink:    #E2DED7;
+  --paper:  #111110;
+  --accent: #A04E1F;
+  --muted:  #6B6865;
+  --border: #2A2826;
   --ok:     #3A8A58;
   --bad:    #AA3232;
   --warn:   #926300;
   --info:   #1A5688;
   color-scheme: dark;
 }
-
-/* ── Three depth layers ───────────────────────────────────
-   Layer 0  #111110  page background   (--paper)
-   Layer 1  #181716  sidebar, cards    — just barely lifted
-   Layer 2  #1F1E1C  dialogs           — clearly elevated   ── */
 html[data-theme="dark"] .sidebar  { background: #181716; border-right-color: #2A2826; }
 html[data-theme="dark"] .dialog   { background: #1F1E1C; border-color: #3C3A37; }
 html[data-theme="dark"] .overlay  { background: rgba(5,4,4,.88); }
-
-/* ── Book cards ── */
 html[data-theme="dark"] .books-grid { background: #2A2826; border-color: #2A2826; }
 html[data-theme="dark"] .book-card  { background: #181716; border-color: #2A2826; }
 html[data-theme="dark"] .book-card:hover { background: #1D1C1A; }
 html[data-theme="dark"] .book-card-meta  { border-top-color: #2A2826; }
-
-/* ── Tables ── */
 html[data-theme="dark"] th          { border-bottom-color: #2A2826; }
 html[data-theme="dark"] td          { border-bottom-color: #1C1B19; }
 html[data-theme="dark"] tr:hover td { background: rgba(160,78,31,.06); }
-
-/* ── Inputs — neutral dark fill, same subtle border logic as light ── */
 html[data-theme="dark"] .field input,
 html[data-theme="dark"] .field select,
 html[data-theme="dark"] .field textarea {
@@ -80,20 +66,15 @@ html[data-theme="dark"] .field textarea {
 html[data-theme="dark"] .field input:focus,
 html[data-theme="dark"] .field select:focus,
 html[data-theme="dark"] .field textarea:focus { border-color: #E2DED7; }
-
-/* ── Fix select dropdown arrow for dark mode (light-colored arrow) ── */
 html[data-theme="dark"] .field select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23E2DED7'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right .75rem center;
 }
-/* Native option elements in dark mode */
 html[data-theme="dark"] .field select option {
   background: #1F1E1C;
   color: #E2DED7;
 }
-
-/* ── Buttons — desaturated, matching the light mode's restraint ── */
 html[data-theme="dark"] .btn {
   background: #1E1D1B;
   border-color: #3C3A37;
@@ -114,12 +95,8 @@ html[data-theme="dark"] .btn-ghost:hover:not(:disabled) {
   border-color: #3C3A37;
   color: #E2DED7;
 }
-
-/* ── Inline messages ── */
 html[data-theme="dark"] .msg-err { background: #200F0F; border-color: #AA3232; }
 html[data-theme="dark"] .msg-ok  { background: #0C1A11; border-color: #3A8A58; }
-
-/* ── Miscellaneous ── */
 html[data-theme="dark"] .welcome-toast      { background: rgba(42,95,62,.96); }
 html[data-theme="dark"] .theme-btn-icon     { background: #181716; border-color: #2A2826; }
 html[data-theme="dark"] .nav-section-label  { color: #3C3A37; }
@@ -132,50 +109,20 @@ html[data-theme="dark"] .review-item        { border-left-color: #2A2826; }
 html { font-size: 16px; }
 body { min-height: 100vh; background: var(--paper); color: var(--ink); font-family: 'EB Garamond', Georgia, serif; -webkit-font-smoothing: antialiased; }
 #root { min-height: 100vh; }
-
-/* ── Theme toggle (compact icon square) ── */
 .theme-btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border);
-  background: var(--paper);
-  color: var(--muted);
-  cursor: pointer;
-  font-size: .85rem;
-  line-height: 1;
-  border-radius: 0;
-  transition: border-color .15s, color .15s, background .15s;
-  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 1px solid var(--border);
+  background: var(--paper); color: var(--muted); cursor: pointer;
+  font-size: .85rem; line-height: 1; border-radius: 0;
+  transition: border-color .15s, color .15s, background .15s; flex-shrink: 0;
 }
 .theme-btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Fixed toggle for auth pages (top-right corner) — also used post-login */
-.auth-theme-btn {
-  position: fixed;
-  top: .85rem;
-  right: 1rem;
-  z-index: 150;
-}
-
-/* ── Auth shell ── */
+.auth-theme-btn { position: fixed; top: .85rem; right: 1rem; z-index: 150; }
 .auth-shell { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3rem 2rem 4rem; overflow-y: auto; }
 .auth-card { width: 100%; max-width: 400px; animation: fadeUp .35s ease both; }
 .auth-wordmark { font-size: .8rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 3rem; display: flex; align-items: baseline; gap: .35rem; }
 .auth-wordmark em { color: var(--accent); font-style: normal; }
-
-/* ── Auth heading — explicit color + font so light mode is never invisible ── */
-.auth-heading {
-  font-family: 'EB Garamond', Georgia, serif;
-  font-size: 2rem;
-  font-weight: 400;
-  line-height: 1.15;
-  margin-bottom: 2rem;
-  color: var(--ink);
-}
-
+.auth-heading { font-family: 'EB Garamond', Georgia, serif; font-size: 2rem; font-weight: 400; line-height: 1.15; margin-bottom: 2rem; color: var(--ink); }
 .field { margin-bottom: 1.1rem; }
 .field label { display: block; font-family: 'DM Mono', monospace; font-size: .63rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
 .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--border); background: var(--paper); color: var(--ink); font-family: 'EB Garamond', serif; font-size: 1rem; padding: .55rem .75rem; outline: none; border-radius: 0; appearance: none; -webkit-appearance: none; transition: border-color .15s; }
@@ -200,23 +147,11 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .msg-err { color: var(--bad); border-color: var(--bad); background: #fdf3f3; }
 .msg-ok  { color: var(--ok);  border-color: var(--ok);  background: #f0faf4; }
 .app { display: flex; min-height: 100vh; overflow-x: hidden; }
-
-/* ── Sidebar ── */
 .sidebar { width: var(--sw); min-height: 100vh; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.5rem; position: fixed; top: 0; left: 0; bottom: 0; background: var(--paper); z-index: 20; overflow-y: auto; flex-shrink: 0; }
-
-/* Wordmark row: brand name left, theme toggle right */
-.sidebar-wm-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2.5rem;
-}
+.sidebar-wm-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; }
 .sidebar-wm { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; line-height: 1.5; }
 .sidebar-wm em { color: var(--accent); font-style: normal; }
 .sidebar-wm-actions { display: flex; align-items: center; gap: .5rem; }
-
-/* Mobile-only close (✕) button inside the open sidebar — hidden on desktop */
-
 .nav-section-label { font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--border); margin: 1.25rem 0 .4rem; }
 .nav-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: 'EB Garamond', serif; font-size: .975rem; color: var(--muted); padding: .35rem 0; transition: color .12s; letter-spacing: .01em; }
 .nav-btn:hover { color: var(--ink); }
@@ -226,20 +161,9 @@ body { min-height: 100vh; background: var(--paper); color: var(--ink); font-fami
 .user-chip { font-family: 'DM Mono', monospace; font-size: .62rem; letter-spacing: .04em; color: var(--muted); line-height: 1.7; margin-bottom: .7rem; word-break: break-all; }
 .user-chip strong { display: block; color: var(--ink); font-weight: 400; font-size: .7rem; }
 .user-chip .uid { display: block; color: var(--accent); font-size: .68rem; letter-spacing: .06em; }
-
-/* ── Main content ── */
 .main { flex: 1; padding: 2.5rem 3rem; max-width: 1040px; min-width: 0; overflow-x: hidden; animation: fadeIn .3s ease both; }
 .page-head { margin-bottom: 1.75rem; padding-bottom: .9rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-
-/* ── Page title — explicit color + font for consistent rendering across themes ── */
-.page-title {
-  font-family: 'EB Garamond', Georgia, serif;
-  font-size: 1.8rem;
-  font-weight: 400;
-  letter-spacing: -.01em;
-  color: var(--ink);
-}
-
+.page-title { font-family: 'EB Garamond', Georgia, serif; font-size: 1.8rem; font-weight: 400; letter-spacing: -.01em; color: var(--ink); }
 .page-sub { font-family: 'DM Mono', monospace; font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); flex: 1; padding-left: 1rem; }
 .filter-row { display: flex; gap: .65rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.5rem; }
 .filter-row .field { margin: 0; min-width: 140px; flex: 1; }
@@ -312,8 +236,6 @@ tr:hover td { background: rgba(160,78,31,.03); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0%, 100% { opacity: .6; } 50% { opacity: .2; } }
 @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
-
-/* ── Live fine styles ── */
 .live-fine-panel { border: 1px solid var(--bad); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; animation: fadeUp .3s ease both; }
 .live-fine-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: livePulse 1.4s ease-in-out infinite; flex-shrink: 0; }
@@ -324,51 +246,21 @@ tr:hover td { background: rgba(160,78,31,.03); }
 .projected-fine { font-family: 'DM Mono', monospace; font-size: .75rem; color: var(--bad); font-weight: 500; }
 .projected-fine.grace { color: var(--warn); }
 .projected-fine.zero { color: var(--muted); }
-
-/* ── Mobile responsive ── */
 .mobile-topbar { display: none; }
 .mobile-overlay { display: none; }
 .mobile-menu-btn { display: none; }
 @media (max-width: 768px) {
   :root { --sw: 0px; }
-  .sidebar {
-    position: fixed; left: -290px; width: 280px;
-    transition: left .25s cubic-bezier(.4,0,.2,1);
-    box-shadow: none; z-index: 100;
-  }
+  .sidebar { position: fixed; left: -290px; width: 280px; transition: left .25s cubic-bezier(.4,0,.2,1); box-shadow: none; z-index: 100; }
   .sidebar.open { left: 0; box-shadow: 6px 0 24px rgba(0,0,0,.22); }
-  .mobile-overlay {
-    display: block; position: fixed; inset: 0;
-    background: rgba(0,0,0,.5); z-index: 99;
-    animation: fadeIn .18s ease;
-  }
+  .mobile-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; animation: fadeIn .18s ease; }
   .main { margin-left: 0 !important; width: 100%; max-width: 100%; padding: 52px 1rem 2rem; }
-  .mobile-topbar {
-    display: flex; align-items: center; gap: .75rem;
-    padding: 0 1rem;
-    height: 52px;
-    position: fixed; top: 0; left: 0; right: 0;
-    background: var(--paper);
-    border-bottom: 1px solid var(--border);
-    z-index: 150;
-  }
-  .mobile-menu-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 34px; height: 34px; background: none; border: 1px solid var(--border);
-    color: var(--ink); cursor: pointer; font-size: 1.1rem; flex-shrink: 0;
-    transition: border-color .15s, color .15s;
-  }
+  .mobile-topbar { display: flex; align-items: center; gap: .75rem; padding: 0 1rem; height: 52px; position: fixed; top: 0; left: 0; right: 0; background: var(--paper); border-bottom: 1px solid var(--border); z-index: 150; }
+  .mobile-menu-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: none; border: 1px solid var(--border); color: var(--ink); cursor: pointer; font-size: 1.1rem; flex-shrink: 0; transition: border-color .15s, color .15s; }
   .mobile-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
-.mobile-menu-btn span {
-  display: inline-block;
-  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
-  line-height: 1;
-}
-.mobile-menu-btn.sidebar-open span { transform: rotate(90deg); }
-  .mobile-topbar-title {
-    font-size: .72rem; font-weight: 600; letter-spacing: .2em;
-    text-transform: uppercase; line-height: 1.5;
-  }
+  .mobile-menu-btn span { display: inline-block; transition: transform 0.25s cubic-bezier(.4,0,.2,1); line-height: 1; }
+  .mobile-menu-btn.sidebar-open span { transform: rotate(90deg); }
+  .mobile-topbar-title { font-size: .72rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; line-height: 1.5; }
   .mobile-topbar-title em { color: var(--accent); font-style: normal; }
   .filter-row { flex-direction: column; gap: .5rem; }
   .filter-row .field { min-width: unset; width: 100%; flex: unset; }
@@ -402,7 +294,6 @@ const daysUntil = (dateStr, now) => {
   return Math.round((targetMidnight - todayMidnight) / 86400000);
 };
 
-/* Mirrors backend FineCalculator — grace=2d, $0.50/d, doubles after 14d */
 const calcProjectedFine = (dueDateStr, now = new Date()) => {
   const DAILY = 0.50, GRACE = 2, ESCALATION = 14;
   if (!dueDateStr) return null;
@@ -410,7 +301,7 @@ const calcProjectedFine = (dueDateStr, now = new Date()) => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
   const daysLate = Math.round((today - dueDay) / 86400000);
-  if (daysLate <= 0) return null;           // not yet late
+  if (daysLate <= 0) return null;
   if (daysLate <= GRACE) return { amount: 0, daysLate, inGrace: true };
   const normalDays = Math.max(0, Math.min(daysLate, ESCALATION) - GRACE);
   const doubleDays = Math.max(0, daysLate - Math.max(GRACE, ESCALATION));
@@ -426,6 +317,26 @@ const parsePage = (data) => {
     totalElements: p.totalElements ?? 0,
   };
 };
+
+/* ─── ID AUTO-FORMATTER ───────────────────────────────────── */
+// Typing "ATE9305" → shows "ATE/9305"
+// Typing "ATE930514" → shows "ATE/9305/14"
+// Works for all ID lengths: ADM/001/00, DEMO/0001/26, UGR/1234/20, etc.
+// Rule: year is always the last 2 digits; once 5+ digits are present we can split.
+function formatUniversityId(raw) {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let i = 0;
+  while (i < clean.length && /[A-Z]/.test(clean[i])) i++;
+  const prefix = clean.slice(0, Math.min(i, 5));   // TYPE  — max 5 letters
+  const digits = clean.slice(i, i + 8);             // SERIAL+YEAR — max 8 digits
+  if (!digits) return prefix;
+  if (digits.length >= 5) {
+    const serial = digits.slice(0, digits.length - 2);
+    const year   = digits.slice(-2);
+    return `${prefix}/${serial}/${year}`;
+  }
+  return `${prefix}/${digits}`;
+}
 
 function Badge({ status }) {
   const cls = {
@@ -472,7 +383,6 @@ function Pager({ page, totalPages, onPage }) {
   );
 }
 
-/* ─── PROJECTED FINE (inline, for loan rows) ──────────────── */
 function ProjectedFine({ dueDate, now }) {
   const fine = calcProjectedFine(dueDate, now);
   if (!fine) return <span className="projected-fine zero">—</span>;
@@ -488,19 +398,15 @@ function ProjectedFine({ dueDate, now }) {
   );
 }
 
-/* ─── LIVE FINE PANEL (top of FinesPage for members) ─────── */
 function LiveFinePanel({ rows, now }) {
   const [, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick(n => n + 1), 60_000);
     return () => clearInterval(t);
   }, []);
-
   const unpaidRows = rows.filter(f => f.status === "UNPAID");
   if (unpaidRows.length === 0) return null;
-
   const totalUnpaid = unpaidRows.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-
   return (
     <div className="live-fine-panel">
       <div className="live-fine-header">
@@ -536,7 +442,6 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-/* ─── STAR RATING ─────────────────────────────────────────── */
 function StarRating({ value, onChange, readonly }) {
   const [hover, setHover] = useState(0);
   const effective = hover || value || 0;
@@ -568,28 +473,17 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
         method: "POST",
         body: JSON.stringify({ identifier: form.identifier, password: form.password }),
       });
-      onLogin({
-        token: data.token,
-        role: data.role,
-        username: data.fullName || form.identifier,
-        universityId: form.identifier,
-      });
+      onLogin({ token: data.token, role: data.role, username: data.fullName || form.identifier, universityId: form.identifier });
     } catch(e) { setErr(e.message); }
     finally { setLoading(false); }
   };
 
   return (
     <div className="auth-shell">
-      {/* Theme toggle — fixed top-right, visible on auth pages */}
-      <button
-        className="theme-btn-icon auth-theme-btn"
-        onClick={onToggleTheme}
-        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        aria-label="Toggle theme"
-      >
+      <button className="theme-btn-icon auth-theme-btn" onClick={onToggleTheme}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-label="Toggle theme">
         {theme === "dark" ? "☀" : "☾"}
       </button>
-
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Sign in to<br/>your account</h1>
@@ -600,7 +494,7 @@ function LoginPage({ onLogin, onRegister, successMessage, theme, onToggleTheme }
             <input type="text" autoFocus autoComplete="username"
               placeholder="e.g. UGR/9305/23 · FAC/1234/20 · LIB/0042/19"
               value={form.identifier}
-              onChange={e => setForm(f => ({ ...f, identifier: e.target.value.toUpperCase() }))}
+              onChange={e => setForm(f => ({ ...f, identifier: formatUniversityId(e.target.value) }))}
               required />
             <div className="field-hint">Format: TYPE/SERIAL/YEAR — use the ID assigned by your institution</div>
           </div>
@@ -644,16 +538,10 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
 
   return (
     <div className="auth-shell">
-      {/* Theme toggle — fixed top-right, visible on auth pages */}
-      <button
-        className="theme-btn-icon auth-theme-btn"
-        onClick={onToggleTheme}
-        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        aria-label="Toggle theme"
-      >
+      <button className="theme-btn-icon auth-theme-btn" onClick={onToggleTheme}
+        title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-label="Toggle theme">
         {theme === "dark" ? "☀" : "☾"}
       </button>
-
       <div className="auth-card">
         <div className="auth-wordmark">LIBRA<em>TRACK</em></div>
         <h1 className="auth-heading">Create<br/>an account</h1>
@@ -665,7 +553,7 @@ function RegisterPage({ onBack, onSuccess, theme, onToggleTheme }) {
           <div className="field">
             <label>University ID</label>
             <input value={form.universityId}
-              onChange={e => setForm(f => ({ ...f, universityId: e.target.value.toUpperCase() }))}
+              onChange={e => setForm(f => ({ ...f, universityId: formatUniversityId(e.target.value) }))}
               placeholder="e.g. ATE/9305/14"
               pattern="^[A-Z]{2,5}/\d{3,6}/\d{2}$"
               title="Format: DEPT/SERIAL/YEAR e.g. ATE/9305/14"
@@ -721,33 +609,17 @@ function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
 
   return (
     <Modal title={book.title} onClose={onClose}>
-      <p style={{ fontStyle:"italic", color:"var(--muted)", marginBottom:".65rem", fontSize:"1rem" }}>
-        {book.author}
-      </p>
-
+      <p style={{ fontStyle:"italic", color:"var(--muted)", marginBottom:".65rem", fontSize:"1rem" }}>{book.author}</p>
       <div style={{ display:"flex", gap:".55rem", flexWrap:"wrap", marginBottom:"1rem", alignItems:"center" }}>
         <Badge status={book.category} />
-        {book.publishedYear && (
-          <span className="mono" style={{ fontSize:".68rem", color:"var(--muted)" }}>{book.publishedYear}</span>
-        )}
-        {book.publisher && (
-          <span style={{ fontSize:".8rem", color:"var(--muted)" }}>{book.publisher}</span>
-        )}
-        {book.isbn && (
-          <span className="mono" style={{ fontSize:".62rem", color:"var(--border)" }}>{book.isbn}</span>
-        )}
+        {book.publishedYear && <span className="mono" style={{ fontSize:".68rem", color:"var(--muted)" }}>{book.publishedYear}</span>}
+        {book.publisher && <span style={{ fontSize:".8rem", color:"var(--muted)" }}>{book.publisher}</span>}
+        {book.isbn && <span className="mono" style={{ fontSize:".62rem", color:"var(--border)" }}>{book.isbn}</span>}
       </div>
-
-      {book.description ? (
-        <p style={{ fontSize:".95rem", lineHeight:1.75, marginBottom:"1.25rem", color:"var(--ink)", fontFamily:"'EB Garamond', Georgia, serif" }}>
-          {book.description}
-        </p>
-      ) : (
-        <p style={{ fontSize:".88rem", color:"var(--muted)", fontStyle:"italic", marginBottom:"1.25rem" }}>
-          No description available.
-        </p>
-      )}
-
+      {book.description
+        ? <p style={{ fontSize:".95rem", lineHeight:1.75, marginBottom:"1.25rem", color:"var(--ink)", fontFamily:"'EB Garamond', Georgia, serif" }}>{book.description}</p>
+        : <p style={{ fontSize:".88rem", color:"var(--muted)", fontStyle:"italic", marginBottom:"1.25rem" }}>No description available.</p>
+      }
       <div style={{ display:"flex", alignItems:"center", gap:".65rem", marginBottom:"1.25rem", flexWrap:"wrap" }}>
         <span className={`book-avail-dot ${hasAvailable ? "" : "none"}`} />
         <span className={`book-card-copies ${hasAvailable ? "available" : ""}`} style={{ fontSize:".75rem" }}>
@@ -762,7 +634,6 @@ function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
           </>
         )}
       </div>
-
       {!loadingReviews && reviews.length > 0 && (
         <div style={{ marginBottom:"1.25rem" }}>
           <div className="detail-section-label">Reader Reviews</div>
@@ -778,13 +649,11 @@ function BookDetailModal({ book, token, role, onBorrow, onReserve, onClose }) {
           ))}
         </div>
       )}
-
       {!loadingReviews && reviews.length === 0 && book.ratingCount > 0 && (
         <p style={{ fontSize:".85rem", color:"var(--muted)", fontStyle:"italic", marginBottom:"1.25rem" }}>
           Readers have rated this book but no written reviews yet.
         </p>
       )}
-
       <div className="dialog-actions">
         <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
         {isMember && (hasAvailable
@@ -802,7 +671,6 @@ function BookCard({ book, role, onBorrow, onReserve, onDetail }) {
   const hasAvailable = available > 0;
   const isMember  = ["STUDENT","FACULTY"].includes(role);
   const isFaculty = role === "FACULTY";
-
   return (
     <div className="book-card">
       <div className="book-card-top">
@@ -810,9 +678,7 @@ function BookCard({ book, role, onBorrow, onReserve, onDetail }) {
         <span className="book-card-year">{book.publishedYear || "—"}</span>
       </div>
       <div>
-        <div className="book-card-title" onClick={() => onDetail(book)} title="Click to view details">
-          {book.title}
-        </div>
+        <div className="book-card-title" onClick={() => onDetail(book)} title="Click to view details">{book.title}</div>
         <div className="book-card-author">{book.author}</div>
       </div>
       {book.isbn && <div className="book-card-isbn">{book.isbn}</div>}
@@ -849,15 +715,12 @@ function BorrowModal({ book, token, role, onClose, onDone }) {
   const defaultDue = new Date(today);
   defaultDue.setDate(defaultDue.getDate() + maxDays);
   const defaultDueStr = defaultDue.toISOString().split("T")[0];
-
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDueStr = tomorrow.toISOString().split("T")[0];
-
   const maxDue = new Date(today);
   maxDue.setDate(maxDue.getDate() + maxDays);
   const maxDueStr = maxDue.toISOString().split("T")[0];
-
   const [copyId, setCopyId] = useState("");
   const [dueDate, setDueDate] = useState(defaultDueStr);
   const [copies, setCopies]   = useState([]);
@@ -926,8 +789,7 @@ function BooksPage({ auth }) {
       if (filters.publishedYear) params.set("publishedYear", filters.publishedYear);
       if (filters.available)     params.set("available", filters.available);
       const data = await api(`/api/books/search?${params}`, {}, token);
-      setRows(data.content);
-      setPg(parsePage(data));
+      setRows(data.content); setPg(parsePage(data));
     } catch(e) { setMsg({ type:"err", text: e.message }); }
     finally { setLoading(false); }
   }, [token, filters]);
@@ -978,7 +840,6 @@ function BooksPage({ auth }) {
         </div>
         <button className="btn btn-sm" onClick={() => load(0)}>Search</button>
       </div>
-
       {loading ? <div className="loading">Loading catalogue…</div> : (
         <>
           {rows.length === 0 ? <div className="empty">No books found.</div> : (
@@ -995,12 +856,10 @@ function BooksPage({ auth }) {
           <Pager page={pg.number} totalPages={pg.totalPages} onPage={load} />
         </>
       )}
-
       {modal === "create" && (
         <CreateBookModal
           onSubmit={async (form) => { await api("/api/books", { method:"POST", body: JSON.stringify(form) }, token); setModal(null); load(0); }}
-          onClose={() => setModal(null)}
-          categories={CATEGORIES}
+          onClose={() => setModal(null)} categories={CATEGORIES}
         />
       )}
       {modal?.type === "borrow" && (
@@ -1022,8 +881,7 @@ function BooksPage({ auth }) {
         </Modal>
       )}
       {modal?.type === "detail" && (
-        <BookDetailModal
-          book={modal.book} token={token} role={role}
+        <BookDetailModal book={modal.book} token={token} role={role}
           onClose={() => setModal(null)}
           onBorrow={(book) => setModal({ type:"borrow", book })}
           onReserve={(book) => setModal({ type:"reserve", book })}
@@ -1066,7 +924,6 @@ function CreateBookModal({ onSubmit, onClose, categories }) {
   );
 }
 
-/* ─── REVIEW INPUT (for returned loans) ──────────────────── */
 function ReviewInput({ bookId, token }) {
   const [stars, setStars]     = useState(0);
   const [text, setText]       = useState("");
@@ -1078,20 +935,14 @@ function ReviewInput({ bookId, token }) {
     if (!stars) return;
     setLoading(true); setErr("");
     try {
-      await api(`/api/books/${bookId}/ratings`, {
-        method: "POST",
-        body: JSON.stringify({ stars, reviewText: text.trim() || null }),
-      }, token);
+      await api(`/api/books/${bookId}/ratings`, { method:"POST", body: JSON.stringify({ stars, reviewText: text.trim() || null }) }, token);
       setSaved(true);
     } catch(e) { setErr(e.message); }
     finally { setLoading(false); }
   };
 
   if (saved) return (
-    <div className="td-rating">
-      <StarRating value={stars} readonly />
-      <span className="rating-hint">✓ Review submitted</span>
-    </div>
+    <div className="td-rating"><StarRating value={stars} readonly /><span className="rating-hint">✓ Review submitted</span></div>
   );
 
   return (
@@ -1099,24 +950,10 @@ function ReviewInput({ bookId, token }) {
       <StarRating value={stars} onChange={s => setStars(s)} />
       {stars > 0 && (
         <>
-          <textarea
-            placeholder="Write a short review… (optional)"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            maxLength={500}
-            rows={2}
-            style={{
-              width:"160px", marginTop:".3rem", padding:".3rem .5rem",
-              fontSize:".8rem", fontFamily:"'EB Garamond',serif",
-              border:"1px solid var(--border)",
-              background:"var(--paper)", color:"var(--ink)", resize:"vertical",
-            }}
-          />
+          <textarea placeholder="Write a short review… (optional)" value={text} onChange={e => setText(e.target.value)} maxLength={500} rows={2}
+            style={{ width:"160px", marginTop:".3rem", padding:".3rem .5rem", fontSize:".8rem", fontFamily:"'EB Garamond',serif", border:"1px solid var(--border)", background:"var(--paper)", color:"var(--ink)", resize:"vertical" }} />
           {err && <span style={{ fontSize:".62rem", color:"var(--bad)" }}>{err}</span>}
-          <button className="btn btn-sm" style={{ marginTop:".25rem" }}
-            disabled={loading} onClick={submit}>
-            {loading ? "…" : "Submit"}
-          </button>
+          <button className="btn btn-sm" style={{ marginTop:".25rem" }} disabled={loading} onClick={submit}>{loading ? "…" : "Submit"}</button>
         </>
       )}
       {!stars && <span className="rating-hint">Rate this book</span>}
@@ -1138,10 +975,7 @@ function LoansPage({ auth }) {
   const [msg, setMsg]         = useState(null);
   const [now, setNow]         = useState(() => new Date());
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1149,8 +983,7 @@ function LoansPage({ auth }) {
       const params = new URLSearchParams({ page, size: 15 });
       if (statusFilter) params.set("status", statusFilter);
       const data = await api(`${endpoint}?${params}`, {}, token);
-      setRows(data.content);
-      setPg(parsePage(data));
+      setRows(data.content); setPg(parsePage(data));
     } catch(e) { setMsg({ type:"err", text: e.message }); }
     finally { setLoading(false); }
   }, [token, endpoint, statusFilter]);
@@ -1158,17 +991,13 @@ function LoansPage({ auth }) {
   useEffect(() => { load(0); }, [load]);
 
   const returnLoan = async (id) => {
-    try {
-      await api(`/api/loans/${id}/return`, { method:"PATCH" }, token);
-      setMsg({ type:"ok", text:"Loan returned successfully." }); load(pg.number);
-    } catch(e) { setMsg({ type:"err", text: e.message }); }
+    try { await api(`/api/loans/${id}/return`, { method:"PATCH" }, token); setMsg({ type:"ok", text:"Loan returned successfully." }); load(pg.number); }
+    catch(e) { setMsg({ type:"err", text: e.message }); }
   };
 
   const extendLoan = async (id, newDueDate) => {
-    try {
-      await api(`/api/loans/${id}/extend`, { method:"PATCH", body: JSON.stringify({ newDueDate }) }, token);
-      setModal(null); setMsg({ type:"ok", text:"Loan extended." }); load(pg.number);
-    } catch(e) { setMsg({ type:"err", text: e.message }); }
+    try { await api(`/api/loans/${id}/extend`, { method:"PATCH", body: JSON.stringify({ newDueDate }) }, token); setModal(null); setMsg({ type:"ok", text:"Loan extended." }); load(pg.number); }
+    catch(e) { setMsg({ type:"err", text: e.message }); }
   };
 
   return (
@@ -1212,15 +1041,9 @@ function LoansPage({ auth }) {
                     <td>{l.status === "RETURNED" ? <span className="projected-fine zero">—</span> : <ProjectedFine dueDate={l.dueDate} now={now} />}</td>
                     <td><Badge status={l.status} /></td>
                     <td><div className="td-actions">
-                      {!isMember && l.status !== "RETURNED" && (
-                        <button className="btn btn-ok btn-sm" onClick={() => returnLoan(l.id)}>Return</button>
-                      )}
-                      {isFaculty && l.status === "ACTIVE" && (
-                        <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type:"extend", loan:l })}>Extend</button>
-                      )}
-                      {isMember && l.status === "RETURNED" && (
-                        <ReviewInput key={l.bookId} bookId={l.bookId} token={token} />
-                      )}
+                      {!isMember && l.status !== "RETURNED" && <button className="btn btn-ok btn-sm" onClick={() => returnLoan(l.id)}>Return</button>}
+                      {isFaculty && l.status === "ACTIVE" && <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type:"extend", loan:l })}>Extend</button>}
+                      {isMember && l.status === "RETURNED" && <ReviewInput key={l.bookId} bookId={l.bookId} token={token} />}
                     </div></td>
                   </tr>
                 ))}
@@ -1237,28 +1060,23 @@ function LoansPage({ auth }) {
 }
 
 function IssueLoanModal({ token, onClose, onDone }) {
-  const [lookup, setLookup]       = useState("");
-  const [form, setForm]           = useState({ memberId:"", bookCopyId:"", dueDate:"" });
+  const [lookup, setLookup]         = useState("");
+  const [form, setForm]             = useState({ memberId:"", bookCopyId:"", dueDate:"" });
   const [memberInfo, setMemberInfo] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [err, setErr]             = useState("");
-
-  /* ── Book search → pick a title → pick an available copy ───────── */
-  const [bookQuery, setBookQuery]     = useState("");
-  const [bookResults, setBookResults] = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [err, setErr]               = useState("");
+  const [bookQuery, setBookQuery]       = useState("");
+  const [bookResults, setBookResults]   = useState([]);
   const [bookSearching, setBookSearching] = useState(false);
-  const [selectedBook, setSelectedBook]   = useState(null);
-  const [copies, setCopies]           = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [copies, setCopies]             = useState([]);
   const [copiesLoading, setCopiesLoading] = useState(false);
-
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const lookupMember = async () => {
     try {
       const u = await api(`/api/admin/users/by-university-id?universityId=${encodeURIComponent(lookup)}`, {}, token);
-      setMemberInfo(u);
-      setForm(f => ({ ...f, memberId: String(u.id) }));
-      setErr("");
+      setMemberInfo(u); setForm(f => ({ ...f, memberId: String(u.id) })); setErr("");
     } catch(e) { setErr("Member not found: " + e.message); setMemberInfo(null); }
   };
 
@@ -1266,18 +1084,14 @@ function IssueLoanModal({ token, onClose, onDone }) {
     if (!bookQuery.trim()) return;
     setBookSearching(true);
     try {
-      const params = new URLSearchParams({ title: bookQuery, size: 6 });
-      const data = await api(`/api/books/search?${params}`, {}, token);
+      const data = await api(`/api/books/search?${new URLSearchParams({ title: bookQuery, size: 6 })}`, {}, token);
       setBookResults(data.content || []);
     } catch(e) { setErr("Book search failed: " + e.message); }
     finally { setBookSearching(false); }
   };
 
   const pickBook = async (book) => {
-    setSelectedBook(book);
-    setBookResults([]);
-    setForm(f => ({ ...f, bookCopyId: "" }));
-    setCopiesLoading(true);
+    setSelectedBook(book); setBookResults([]); setForm(f => ({ ...f, bookCopyId: "" })); setCopiesLoading(true);
     try {
       const data = await api(`/api/books/${book.id}/copies/available`, {}, token);
       setCopies(Array.isArray(data) ? data : []);
@@ -1299,71 +1113,49 @@ function IssueLoanModal({ token, onClose, onDone }) {
         <div className="field">
           <label>Look up member by University ID</label>
           <div style={{ display:"flex", gap:".5rem" }}>
-            <input value={lookup} onChange={e => setLookup(e.target.value.toUpperCase())} placeholder="ATE/9305/14" style={{ flex:1 }} />
+            <input value={lookup}
+              onChange={e => setLookup(formatUniversityId(e.target.value))}
+              placeholder="ATE/9305/14" style={{ flex:1 }} />
             <button type="button" className="btn btn-ghost btn-sm" onClick={lookupMember}>Look up</button>
           </div>
           {memberInfo && <div className="msg msg-ok" style={{ marginTop:".4rem" }}>✓ {memberInfo.fullName} — {memberInfo.role}</div>}
         </div>
         <div className="field"><label>Member ID (auto-filled)</label>
           <input required type="number" value={form.memberId} onChange={set("memberId")} /></div>
-
         <div className="field">
           <label>Find book by title</label>
           <div style={{ display:"flex", gap:".5rem" }}>
-            <input
-              value={bookQuery}
-              onChange={e => setBookQuery(e.target.value)}
+            <input value={bookQuery} onChange={e => setBookQuery(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); searchBooks(); } }}
-              placeholder="e.g. Clean Code"
-              style={{ flex:1 }}
-            />
+              placeholder="e.g. Clean Code" style={{ flex:1 }} />
             <button type="button" className="btn btn-ghost btn-sm" disabled={bookSearching} onClick={searchBooks}>
               {bookSearching ? "…" : "Search"}
             </button>
           </div>
-
           {bookResults.length > 0 && (
             <div style={{ border:"1px solid var(--border)", marginTop:".5rem", maxHeight:"160px", overflowY:"auto" }}>
               {bookResults.map(b => (
-                <button
-                  type="button"
-                  key={b.id}
-                  onClick={() => pickBook(b)}
-                  style={{
-                    display:"block", width:"100%", textAlign:"left", padding:".5rem .65rem",
-                    background:"none", border:"none", borderBottom:"1px solid var(--border)",
-                    cursor:"pointer", fontFamily:"'EB Garamond', serif", fontSize:".9rem", color:"var(--ink)",
-                  }}
-                >
+                <button type="button" key={b.id} onClick={() => pickBook(b)}
+                  style={{ display:"block", width:"100%", textAlign:"left", padding:".5rem .65rem", background:"none", border:"none", borderBottom:"1px solid var(--border)", cursor:"pointer", fontFamily:"'EB Garamond', serif", fontSize:".9rem", color:"var(--ink)" }}>
                   {b.title} <span style={{ color:"var(--muted)", fontStyle:"italic" }}>— {b.author}</span>
                 </button>
               ))}
             </div>
           )}
-
-          {selectedBook && (
-            <div className="msg msg-ok" style={{ marginTop:".4rem" }}>
-              ✓ {selectedBook.title} — {selectedBook.author}
-            </div>
-          )}
+          {selectedBook && <div className="msg msg-ok" style={{ marginTop:".4rem" }}>✓ {selectedBook.title} — {selectedBook.author}</div>}
         </div>
-
         {selectedBook && (
           <div className="field">
             <label>Available copy</label>
-            {copiesLoading ? (
-              <div style={{ fontSize:".82rem", color:"var(--muted)" }}>Loading copies…</div>
-            ) : copies.length === 0 ? (
-              <div className="msg msg-err">No available copies for this title.</div>
-            ) : (
-              <select required value={form.bookCopyId} onChange={set("bookCopyId")}>
-                <option value="">— choose a copy —</option>
-                {copies.map(c => <option key={c.id} value={c.id}>{c.copyNumber} ({c.condition})</option>)}
-              </select>
-            )}
+            {copiesLoading ? <div style={{ fontSize:".82rem", color:"var(--muted)" }}>Loading copies…</div>
+              : copies.length === 0 ? <div className="msg msg-err">No available copies for this title.</div>
+              : <select required value={form.bookCopyId} onChange={set("bookCopyId")}>
+                  <option value="">— choose a copy —</option>
+                  {copies.map(c => <option key={c.id} value={c.id}>{c.copyNumber} ({c.condition})</option>)}
+                </select>
+            }
           </div>
         )}
-
         <div className="field"><label>Due date</label>
           <input required type="date" value={form.dueDate} onChange={set("dueDate")} /></div>
         {err && <div className="msg msg-err">{err}</div>}
@@ -1378,15 +1170,12 @@ function IssueLoanModal({ token, onClose, onDone }) {
 
 function ExtendModal({ loan, onClose, onExtend }) {
   const [newDueDate, setNewDueDate] = useState("");
-
   const dayAfterCurrentDue = new Date(loan.dueDate);
   dayAfterCurrentDue.setDate(dayAfterCurrentDue.getDate() + 1);
   const minDueStr = dayAfterCurrentDue.toISOString().split("T")[0];
-
   const maxDue = new Date();
   maxDue.setDate(maxDue.getDate() + 30);
   const maxDueStr = maxDue.toISOString().split("T")[0];
-
   return (
     <Modal title="Extend loan" onClose={onClose}>
       <p style={{ fontSize:".95rem", marginBottom:"1.25rem", lineHeight:1.5, color:"var(--muted)" }}>
@@ -1414,10 +1203,7 @@ function ReservationsPage({ auth }) {
   const [msg, setMsg]         = useState(null);
   const [now, setNow]         = useState(() => new Date());
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1425,8 +1211,7 @@ function ReservationsPage({ auth }) {
       const params = new URLSearchParams({ page, size: 15 });
       if (statusFilter) params.set("status", statusFilter);
       const data = await api(`${endpoint}?${params}`, {}, token);
-      setRows(data.content);
-      setPg(parsePage(data));
+      setRows(data.content); setPg(parsePage(data));
     } catch(e) { setMsg({ type:"err", text: e.message }); }
     finally { setLoading(false); }
   }, [token, endpoint, statusFilter]);
@@ -1434,10 +1219,8 @@ function ReservationsPage({ auth }) {
   useEffect(() => { load(0); }, [load]);
 
   const cancel = async (id) => {
-    try {
-      await api(`/api/reservations/${id}`, { method:"DELETE" }, token);
-      setMsg({ type:"ok", text:"Reservation cancelled." }); load(pg.number);
-    } catch(e) { setMsg({ type:"err", text: e.message }); }
+    try { await api(`/api/reservations/${id}`, { method:"DELETE" }, token); setMsg({ type:"ok", text:"Reservation cancelled." }); load(pg.number); }
+    catch(e) { setMsg({ type:"err", text: e.message }); }
   };
 
   return (
@@ -1509,10 +1292,7 @@ function FinesPage({ auth }) {
   const [msg, setMsg]         = useState(null);
   const [now, setNow]         = useState(() => new Date());
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1520,8 +1300,7 @@ function FinesPage({ auth }) {
       const params = new URLSearchParams({ page, size: 15 });
       if (statusFilter) params.set("status", statusFilter);
       const data = await api(`${endpoint}?${params}`, {}, token);
-      setRows(data.content);
-      setPg(parsePage(data));
+      setRows(data.content); setPg(parsePage(data));
     } catch(e) { setMsg({ type:"err", text: e.message }); }
     finally { setLoading(false); }
   }, [token, endpoint, statusFilter]);
@@ -1529,17 +1308,13 @@ function FinesPage({ auth }) {
   useEffect(() => { load(0); }, [load]);
 
   const markPaid = async (id) => {
-    try {
-      await api(`/api/fines/${id}/pay`, { method:"PATCH" }, token);
-      setMsg({ type:"ok", text:"Fine marked as paid." }); load(pg.number);
-    } catch(e) { setMsg({ type:"err", text: e.message }); }
+    try { await api(`/api/fines/${id}/pay`, { method:"PATCH" }, token); setMsg({ type:"ok", text:"Fine marked as paid." }); load(pg.number); }
+    catch(e) { setMsg({ type:"err", text: e.message }); }
   };
 
   const waiveFine = async (id, reason) => {
-    try {
-      await api(`/api/fines/${id}/waive`, { method:"PATCH", body: JSON.stringify({ reason }) }, token);
-      setModal(null); setMsg({ type:"ok", text:"Fine waived." }); load(pg.number);
-    } catch(e) { setMsg({ type:"err", text: e.message }); }
+    try { await api(`/api/fines/${id}/waive`, { method:"PATCH", body: JSON.stringify({ reason }) }, token); setModal(null); setMsg({ type:"ok", text:"Fine waived." }); load(pg.number); }
+    catch(e) { setMsg({ type:"err", text: e.message }); }
   };
 
   return (
@@ -1618,12 +1393,12 @@ function WaiveForm({ fineId, onWaive, onClose }) {
 /* ─── REPORTS PAGE ────────────────────────────────────────── */
 function ReportsPage({ auth }) {
   const { token } = auth;
-  const [overdue, setOverdue]     = useState([]);
+  const [overdue, setOverdue]           = useState([]);
   const [overdueTotal, setOverdueTotal] = useState(0);
-  const [loading, setLoading]     = useState(false);
-  const [summaryForm, setSummaryForm] = useState({ from:"", to:"" });
-  const [summary, setSummary]     = useState(null);
-  const [msg, setMsg]             = useState(null);
+  const [loading, setLoading]           = useState(false);
+  const [summaryForm, setSummaryForm]   = useState({ from:"", to:"" });
+  const [summary, setSummary]           = useState(null);
+  const [msg, setMsg]                   = useState(null);
 
   const loadOverdue = useCallback(async () => {
     setLoading(true);
@@ -1639,8 +1414,7 @@ function ReportsPage({ auth }) {
   const loadSummary = async (e) => {
     e.preventDefault();
     try {
-      const params = new URLSearchParams({ fromDate: summaryForm.from, toDate: summaryForm.to });
-      const data = await api(`/api/reports/fines-summary?${params}`, {}, token);
+      const data = await api(`/api/reports/fines-summary?${new URLSearchParams({ fromDate: summaryForm.from, toDate: summaryForm.to })}`, {}, token);
       setSummary(data);
     } catch(e) { setMsg({ type:"err", text: e.message }); }
   };
@@ -1690,16 +1464,69 @@ function ReportsPage({ auth }) {
   );
 }
 
+/* ─── RESET PASSWORD MODAL ────────────────────────────────── */
+// BCrypt is one-way — passwords cannot be retrieved, only replaced.
+// This lets an admin set a new known password for a user who is locked out.
+function ResetPasswordModal({ user, token, onClose, onDone }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [err, setErr]           = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (password !== confirm) { setErr("Passwords don't match."); return; }
+    setErr(""); setLoading(true);
+    try {
+      await api(`/api/admin/users/${user.id}/reset-password`, {
+        method: "PATCH",
+        body: JSON.stringify({ newPassword: password }),
+      }, token);
+      onDone(`Password reset for ${user.fullName}.`);
+    } catch(e) { setErr(e.message); setLoading(false); }
+  };
+
+  return (
+    <Modal title={`Reset password: ${user.fullName}`} onClose={onClose}>
+      <p style={{ fontSize:".9rem", color:"var(--muted)", marginBottom:"1.25rem", lineHeight:1.6 }}>
+        <span className="mono" style={{ color:"var(--accent)", fontSize:".72rem" }}>{user.universityId || user.email}</span><br/>
+        Set a new password and share it with the user in person.<br/>
+        <span style={{ fontSize:".82rem" }}>Passwords are hashed — the old one cannot be retrieved, only replaced.</span>
+      </p>
+      <form onSubmit={submit}>
+        <div className="field">
+          <label>New password (min 8 chars)</label>
+          <input type="password" required minLength={8} autoFocus
+            value={password} onChange={e => setPassword(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Confirm new password</label>
+          <input type="password" required minLength={8}
+            value={confirm} onChange={e => setConfirm(e.target.value)} />
+        </div>
+        {err && <div className="msg msg-err">{err}</div>}
+        <div className="dialog-actions">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button className="btn btn-sm" disabled={loading || !password || !confirm}>
+            {loading ? "Resetting…" : "Reset password"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 /* ─── USERS PAGE ──────────────────────────────────────────── */
 function UsersPage({ auth }) {
   const { token } = auth;
-  const [rows, setRows]       = useState([]);
-  const [pg, setPg]           = useState({ number:0, totalPages:0, totalElements:0 });
-  const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ role:"", active:"" });
-  const [modal, setModal]     = useState(null);
-  const [editNameUser, setEditNameUser] = useState(null);
-  const [msg, setMsg]         = useState(null);
+  const [rows, setRows]           = useState([]);
+  const [pg, setPg]               = useState({ number:0, totalPages:0, totalElements:0 });
+  const [loading, setLoading]     = useState(false);
+  const [filters, setFilters]     = useState({ role:"", active:"" });
+  const [modal, setModal]         = useState(null);
+  const [editNameUser, setEditNameUser]   = useState(null);
+  const [resetPwdUser, setResetPwdUser]   = useState(null);
+  const [msg, setMsg]             = useState(null);
 
   const load = useCallback(async (page = 0) => {
     setLoading(true); setMsg(null);
@@ -1708,8 +1535,7 @@ function UsersPage({ auth }) {
       if (filters.role)   params.set("role", filters.role);
       if (filters.active) params.set("active", filters.active);
       const data = await api(`/api/admin/users?${params}`, {}, token);
-      setRows(data.content);
-      setPg(parsePage(data));
+      setRows(data.content); setPg(parsePage(data));
     } catch(e) { setMsg({ type:"err", text: e.message }); }
     finally { setLoading(false); }
   }, [token, filters]);
@@ -1727,9 +1553,7 @@ function UsersPage({ auth }) {
   const renameUser = async (newName) => {
     try {
       await api(`/api/admin/users/${editNameUser.id}/name`, { method:"PATCH", body: JSON.stringify({ fullName: newName }) }, token);
-      setMsg({ type:"ok", text:"Name updated." });
-      setEditNameUser(null);
-      load(pg.number);
+      setMsg({ type:"ok", text:"Name updated." }); setEditNameUser(null); load(pg.number);
     } catch(e) { throw e; }
   };
 
@@ -1775,6 +1599,7 @@ function UsersPage({ auth }) {
                     <td className="mono" style={{ fontSize:".72rem" }}>{fmt(u.createdAt)}</td>
                     <td><div className="td-actions">
                       <button className="btn btn-ghost btn-sm" onClick={() => setEditNameUser(u)}>Edit name</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setResetPwdUser(u)}>Reset pwd</button>
                       {u.active  && <button className="btn btn-danger btn-sm" onClick={() => deactivate(u.id)}>Deactivate</button>}
                       {!u.active && <button className="btn btn-ok btn-sm"     onClick={() => activate(u.id)}>Activate</button>}
                     </div></td>
@@ -1793,6 +1618,14 @@ function UsersPage({ auth }) {
       {editNameUser && (
         <EditNameModal user={editNameUser} onClose={() => setEditNameUser(null)} onSave={renameUser} />
       )}
+      {resetPwdUser && (
+        <ResetPasswordModal
+          user={resetPwdUser}
+          token={token}
+          onClose={() => setResetPwdUser(null)}
+          onDone={(text) => { setResetPwdUser(null); setMsg({ type:"ok", text }); }}
+        />
+      )}
     </div>
   );
 }
@@ -1801,23 +1634,19 @@ function EditNameModal({ user, onClose, onSave }) {
   const [name, setName]       = useState(user.fullName);
   const [loading, setLoading] = useState(false);
   const [err, setErr]         = useState("");
-
   const submit = async (e) => {
     e.preventDefault(); setErr(""); setLoading(true);
     try { await onSave(name.trim()); }
     catch (e) { setErr(e.message); setLoading(false); }
   };
-
   return (
     <Modal title={`Edit name: ${user.fullName}`} onClose={onClose}>
       <p style={{ fontSize:".9rem", color:"var(--muted)", marginBottom:"1.25rem", lineHeight:1.5 }}>
         {user.universityId || user.email} · Correct this only after verifying the person's identity directly.
       </p>
       <form onSubmit={submit}>
-        <div className="field">
-          <label>Full name</label>
-          <input required minLength={2} value={name} onChange={e => setName(e.target.value)} autoFocus />
-        </div>
+        <div className="field"><label>Full name</label>
+          <input required minLength={2} value={name} onChange={e => setName(e.target.value)} autoFocus /></div>
         {err && <div className="msg msg-err">{err}</div>}
         <div className="dialog-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
@@ -1835,10 +1664,8 @@ function CreateStaffModal({ token, onClose, onDone }) {
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const submit = async (e) => {
     e.preventDefault(); setErr(""); setLoading(true);
-    try {
-      await api("/api/admin/staff", { method:"POST", body: JSON.stringify(form) }, token);
-      onDone();
-    } catch(e) { setErr(e.message); setLoading(false); }
+    try { await api("/api/admin/staff", { method:"POST", body: JSON.stringify(form) }, token); onDone(); }
+    catch(e) { setErr(e.message); setLoading(false); }
   };
   return (
     <Modal title="Create staff account" onClose={onClose}>
@@ -1847,7 +1674,7 @@ function CreateStaffModal({ token, onClose, onDone }) {
         <div className="field">
           <label>Staff ID</label>
           <input required value={form.staffId}
-            onChange={e => setForm(f => ({ ...f, staffId: e.target.value.toUpperCase() }))}
+            onChange={e => setForm(f => ({ ...f, staffId: formatUniversityId(e.target.value) }))}
             placeholder="LIB/XXXX/YY or ADM/XXXX/YY"
             pattern="^(LIB|ADM)/\d{3,6}/\d{2}$"
             title="LIB/XXXX/YY for librarians · ADM/XXXX/YY for admins" />
@@ -1928,7 +1755,7 @@ function RegistryPage({ auth }) {
           <form onSubmit={add}>
             <div className="field"><label>University ID *</label>
               <input required placeholder="e.g. ATE/8809/14" value={form.universityId}
-                onChange={e => setForm(f => ({ ...f, universityId: e.target.value.toUpperCase() }))}
+                onChange={e => setForm(f => ({ ...f, universityId: formatUniversityId(e.target.value) }))}
                 pattern="^[A-Z]{2,5}/\d{3,6}/\d{2}$" /></div>
             <div className="field"><label>Full Name *</label>
               <input required value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} /></div>
@@ -1963,55 +1790,51 @@ function Sidebar({ auth, page, onPage, onLogout, open, onClose }) {
     <>
       {open && <div className="mobile-overlay" onClick={onClose} />}
       <nav className={`sidebar${open ? " open" : ""}`}>
-      {/* ── Wordmark row ── */}
-      <div className="sidebar-wm-row">
-        <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
-      </div>
-
-      <div>{link("Catalogue", "books")}</div>
-      {isMember && (<>
-        <div className="nav-section-label">Library</div>
-        {link("My Loans", "loans")}
-        {link("My Reservations", "reservations")}
-        {link("My Fines", "fines")}
-      </>)}
-      {isLibOrAdmin && (<>
-        <div className="nav-section-label">Operations</div>
-        {link("Loans", "loans")}
-        {link("Reservations", "reservations")}
-        {link("Fines", "fines")}
-        {link("Reports", "reports")}
-      </>)}
-      {isAdmin && (<>
-        <div className="nav-section-label">Administration</div>
-        {link("Users", "users")}
-        {link("Registry", "registry")}
-      </>)}
-
-      {/* ── Footer: user info + sign out only (theme toggle moved to top) ── */}
-      <div className="sidebar-foot">
-        <div className="user-chip">
-          <strong>{username}</strong>
-          {universityId && <span className="uid">{universityId}</span>}
-          {role}
+        <div className="sidebar-wm-row">
+          <div className="sidebar-wm">LIBRA<em>TRACK</em></div>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ width:"100%", justifyContent:"center" }} onClick={onLogout}>
-          Sign out
-        </button>
-      </div>
-    </nav>
+        <div>{link("Catalogue", "books")}</div>
+        {isMember && (<>
+          <div className="nav-section-label">Library</div>
+          {link("My Loans", "loans")}
+          {link("My Reservations", "reservations")}
+          {link("My Fines", "fines")}
+        </>)}
+        {isLibOrAdmin && (<>
+          <div className="nav-section-label">Operations</div>
+          {link("Loans", "loans")}
+          {link("Reservations", "reservations")}
+          {link("Fines", "fines")}
+          {link("Reports", "reports")}
+        </>)}
+        {isAdmin && (<>
+          <div className="nav-section-label">Administration</div>
+          {link("Users", "users")}
+          {link("Registry", "registry")}
+        </>)}
+        <div className="sidebar-foot">
+          <div className="user-chip">
+            <strong>{username}</strong>
+            {universityId && <span className="uid">{universityId}</span>}
+            {role}
+          </div>
+          <button className="btn btn-ghost btn-sm" style={{ width:"100%", justifyContent:"center" }} onClick={onLogout}>
+            Sign out
+          </button>
+        </div>
+      </nav>
     </>
   );
 }
 
 /* ─── ROOT ────────────────────────────────────────────────── */
 export default function LibraTrack() {
-  const [auth, setAuth]           = useState(null);
-  const [screen, setScreen]       = useState("login");
-  const [page, setPage]           = useState("books");
+  const [auth, setAuth]             = useState(null);
+  const [screen, setScreen]         = useState("login");
+  const [page, setPage]             = useState("books");
   const [successMsg, setSuccessMsg] = useState("");
-  const [welcome, setWelcome]     = useState("");
-  const [theme, setTheme]         = useState(() => localStorage.getItem("lt-theme") || "light");
+  const [welcome, setWelcome]       = useState("");
+  const [theme, setTheme]           = useState(() => localStorage.getItem("lt-theme") || "light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -2025,27 +1848,18 @@ export default function LibraTrack() {
     setSuccessMsg("");
     setWelcome(`Welcome back, ${a.username}!`);
     setTimeout(() => setWelcome(""), 4000);
-    setAuth(a);
-    setPage("books");
-    setSidebarOpen(false);
+    setAuth(a); setPage("books"); setSidebarOpen(false);
   };
 
   const handleLogout = () => {
     if (auth?.token) api("/api/auth/logout", { method:"POST" }, auth.token).catch(() => {});
-    setAuth(null);
-    setScreen("login");
-    setWelcome("");
-    setSidebarOpen(false);
+    setAuth(null); setScreen("login"); setWelcome(""); setSidebarOpen(false);
   };
 
-  /* Mobile topbar injected at the top of each page via context-free wrapper */
   const MobileTopbar = () => (
     <div className="mobile-topbar">
-      <button
-        className={`mobile-menu-btn${sidebarOpen ? " sidebar-open" : ""}`}
-        onClick={() => setSidebarOpen(o => !o)}
-        aria-label={sidebarOpen ? "Close menu" : "Open menu"}
-      >
+      <button className={`mobile-menu-btn${sidebarOpen ? " sidebar-open" : ""}`}
+        onClick={() => setSidebarOpen(o => !o)} aria-label={sidebarOpen ? "Close menu" : "Open menu"}>
         <span>{sidebarOpen ? "✕" : "☰"}</span>
       </button>
       <div className="mobile-topbar-title">LIBRA<em>TRACK</em></div>
@@ -2058,28 +1872,15 @@ export default function LibraTrack() {
       {welcome && <div className="welcome-toast">✓ {welcome}</div>}
       {!auth ? (
         screen === "login"
-          ? <LoginPage
-              onLogin={handleLogin}
-              onRegister={() => { setSuccessMsg(""); setScreen("register"); }}
-              successMessage={successMsg}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-            />
-          : <RegisterPage
-              onBack={() => { setSuccessMsg(""); setScreen("login"); }}
+          ? <LoginPage onLogin={handleLogin} onRegister={() => { setSuccessMsg(""); setScreen("register"); }}
+              successMessage={successMsg} theme={theme} onToggleTheme={toggleTheme} />
+          : <RegisterPage onBack={() => { setSuccessMsg(""); setScreen("login"); }}
               onSuccess={(msg) => { setSuccessMsg(msg); setScreen("login"); }}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-            />
+              theme={theme} onToggleTheme={toggleTheme} />
       ) : (
         <div className="app">
-          {/* Theme toggle — fixed top-right always, consistent with auth pages */}
-          <button
-            className="theme-btn-icon auth-theme-btn"
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label="Toggle theme"
-          >
+          <button className="theme-btn-icon auth-theme-btn" onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} aria-label="Toggle theme">
             {theme === "dark" ? "☀" : "☾"}
           </button>
           <Sidebar auth={auth} page={page} onPage={setPage} onLogout={handleLogout}
