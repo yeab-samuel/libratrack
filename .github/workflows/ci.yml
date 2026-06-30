@@ -10,6 +10,32 @@ jobs:
   backend:
     name: Backend (Maven build + tests)
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: libratrack
+          POSTGRES_USER: libratrack
+          POSTGRES_PASSWORD: ci_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/libratrack
+      DB_USER: libratrack
+      DB_PASS: ci_test_password
+      JWT_SECRET: ci-test-secret-key-not-for-production-use-only-in-pipeline
+      SPRING_PROFILES_ACTIVE: default
+      CRON_SECRET: ci-test-cron-secret
+      MAIL_ENABLED: "false"
+      RESEND_API_KEY: ci-test-key-unused
+
     steps:
       - uses: actions/checkout@v4
 
