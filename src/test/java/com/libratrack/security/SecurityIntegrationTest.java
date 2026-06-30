@@ -1,13 +1,16 @@
 package com.libratrack.security;
 
 import com.libratrack.entity.UniversityRegistry;
+import com.libratrack.entity.User;
 import com.libratrack.enums.Role;
 import com.libratrack.repository.UniversityRegistryRepository;
+import com.libratrack.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -38,6 +41,8 @@ class SecurityIntegrationTest {
 
     @Autowired TestRestTemplate rest;
     @Autowired UniversityRegistryRepository registryRepository;
+    @Autowired UserRepository userRepository;
+    @Autowired PasswordEncoder passwordEncoder;
 
     // Unique university ID per call, e.g. TST/000001/26 — matches the
     // DEPT/SERIAL/YEAR format the registry and register endpoint expect.
@@ -53,22 +58,42 @@ class SecurityIntegrationTest {
      * registers and logs in that exact person. Login uses "identifier"
      * (the university ID) + "password" — matching the real /api/auth/login
      * contract, not email/password.
+     *
+     * ADMIN and LIBRARIAN are staff roles that AuthService#register
+     * deliberately refuses to self-register (see "Cannot self-register as
+     * ADMIN/LIBRARIAN" guard) — that's correct production behavior, mirroring
+     * the real-world rule that staff accounts are created by an existing
+     * admin via /api/admin/staff, not by the public registration form. Since
+     * there's no admin yet when these tests bootstrap their first staff
+     * account, we seed those roles straight into the repository instead,
+     * matching exactly what AuthService#createStaff would have produced.
      */
     private String registerAndLogin(String email, String role) {
         String universityId = nextUniversityId();
+        Role roleEnum = Role.valueOf(role);
 
-        registryRepository.save(UniversityRegistry.builder()
-                .universityId(universityId)
-                .fullName("Test User")
-                .role(Role.valueOf(role))
-                .active(true)
-                .build());
+        if (roleEnum == Role.ADMIN || roleEnum == Role.LIBRARIAN) {
+            userRepository.save(User.builder()
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode("Password1!"))
+                    .role(roleEnum)
+                    .fullName("Test User")
+                    .universityId(universityId)
+                    .build());
+        } else {
+            registryRepository.save(UniversityRegistry.builder()
+                    .universityId(universityId)
+                    .fullName("Test User")
+                    .role(roleEnum)
+                    .active(true)
+                    .build());
 
-        rest.postForEntity("/api/auth/register",
-                Map.of("fullName", "Test User", "email", email,
-                        "password", "Password1!", "role", role,
-                        "universityId", universityId),
-                Object.class);
+            rest.postForEntity("/api/auth/register",
+                    Map.of("fullName", "Test User", "email", email,
+                            "password", "Password1!", "role", role,
+                            "universityId", universityId),
+                    Object.class);
+        }
 
         var resp = rest.postForEntity("/api/auth/login",
                 Map.of("identifier", universityId, "password", "Password1!"),
