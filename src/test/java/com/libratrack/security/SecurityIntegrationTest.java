@@ -1,5 +1,8 @@
 package com.libratrack.security;
 
+import com.libratrack.entity.UniversityRegistry;
+import com.libratrack.enums.Role;
+import com.libratrack.repository.UniversityRegistryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,16 +37,41 @@ class SecurityIntegrationTest {
     }
 
     @Autowired TestRestTemplate rest;
+    @Autowired UniversityRegistryRepository registryRepository;
+
+    // Unique university ID per call, e.g. TST/000001/26 — matches the
+    // DEPT/SERIAL/YEAR format the registry and register endpoint expect.
+    private static final AtomicInteger SERIAL = new AtomicInteger(1);
+    private static String nextUniversityId() {
+        return String.format("TST/%06d/26", SERIAL.getAndIncrement());
+    }
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Seeds a registry entry (registration is gated on the registry) then
+     * registers and logs in that exact person. Login uses "identifier"
+     * (the university ID) + "password" — matching the real /api/auth/login
+     * contract, not email/password.
+     */
     private String registerAndLogin(String email, String role) {
+        String universityId = nextUniversityId();
+
+        registryRepository.save(UniversityRegistry.builder()
+                .universityId(universityId)
+                .fullName("Test User")
+                .role(Role.valueOf(role))
+                .active(true)
+                .build());
+
         rest.postForEntity("/api/auth/register",
                 Map.of("fullName", "Test User", "email", email,
-                        "password", "Password1!", "role", role),
+                        "password", "Password1!", "role", role,
+                        "universityId", universityId),
                 Object.class);
+
         var resp = rest.postForEntity("/api/auth/login",
-                Map.of("email", email, "password", "Password1!"),
+                Map.of("identifier", universityId, "password", "Password1!"),
                 Map.class);
         return (String) resp.getBody().get("token");
     }
@@ -102,45 +131,29 @@ class SecurityIntegrationTest {
     @Test
     void studentA_CannotAccess_LoanOwnedByStudentB() {
         // Register librarian to create loan
+        String libUniversityId = nextUniversityId();
+        registryRepository.save(UniversityRegistry.builder()
+                .universityId(libUniversityId).fullName("Librarian")
+                .role(Role.LIBRARIAN).active(true).build());
         rest.postForEntity("/api/auth/register",
                 Map.of("fullName", "Librarian", "email", "lib-bola@test.com",
-                        "password", "Password1!", "role", "LIBRARIAN"),
+                        "password", "Password1!", "role", "LIBRARIAN",
+                        "universityId", libUniversityId),
                 Object.class);
-        String libToken = ((Map<?, ?>) rest.postForEntity("/api/auth/login",
-                Map.of("email", "lib-bola@test.com", "password", "Password1!"),
-                Map.class).getBody()).get("token").toString();
 
         // Register student A (owner of the loan)
-        rest.postForEntity("/api/auth/register",
-                Map.of("fullName", "Student A", "email", "student-a-bola@test.com",
-                        "password", "Password1!", "role", "STUDENT"),
-                Object.class);
-        // Get student A's id from login
-        var loginA = rest.postForEntity("/api/auth/login",
-                Map.of("email", "student-a-bola@test.com", "password", "Password1!"),
-                Map.class);
-        String tokenA = (String) loginA.getBody().get("token");
+        String tokenA = registerAndLogin("student-a-bola@test.com");
 
         // Register student B (the attacker)
         String tokenB = registerAndLogin("student-b-bola@test.com");
 
-        // Create a book and copy so the loan endpoint can be exercised
-        // We check via GET /api/loans/{id} — if the loan doesn't exist, 404 is
-        // returned for both students. Use a known non-existent loan ID to verify
-        // that student B gets 404 (not the loan data) while the real BOLA check
-        // is confirmed: student B is blocked from accessing loan id=1 even if it
-        // existed, because ownership check fires first.
-        // More directly, we verify that student B cannot call GET /api/loans
-        // (all-loans admin endpoint) — which is a role-level BOLA check.
+        // Student B cannot call GET /api/loans (all-loans admin/librarian endpoint)
+        // — a role-level BOLA check.
         var resp = rest.exchange("/api/loans",
                 HttpMethod.GET, new HttpEntity<>(bearerHeaders(tokenB)), Object.class);
         assertEquals(HttpStatus.FORBIDDEN, resp.getStatusCode());
 
-        // And verify student B cannot see student A's /api/fines/mine (own-only)
-        // by trying /api/fines/{id} with an ID belonging to another member.
-        // Since no fines exist yet, 404 is the correct response for any user —
-        // but we verify the BOLA gate works by confirming student B cannot list
-        // all fines (admin/librarian endpoint).
+        // And student B cannot list all fines (admin/librarian endpoint).
         var finesResp = rest.exchange("/api/fines",
                 HttpMethod.GET, new HttpEntity<>(bearerHeaders(tokenB)), Object.class);
         assertEquals(HttpStatus.FORBIDDEN, finesResp.getStatusCode());
@@ -150,14 +163,7 @@ class SecurityIntegrationTest {
 
     @Test
     void librarian_CannotAccess_AdminOnlyEndpoint() {
-        rest.postForEntity("/api/auth/register",
-                Map.of("fullName", "Librarian2", "email", "lib2-sec@test.com",
-                        "password", "Password1!", "role", "LIBRARIAN"),
-                Object.class);
-        var loginResp = rest.postForEntity("/api/auth/login",
-                Map.of("email", "lib2-sec@test.com", "password", "Password1!"),
-                Map.class);
-        String libToken = (String) loginResp.getBody().get("token");
+        String libToken = registerAndLogin("lib2-sec@test.com", "LIBRARIAN");
 
         // PATCH /api/admin/users/{id}/deactivate is ADMIN only
         var resp = rest.exchange("/api/admin/users/1/deactivate",
@@ -177,26 +183,19 @@ class SecurityIntegrationTest {
 
     @Test
     void studentB_CannotAccess_LoanOwnedByStudentA() {
-        // Register admin
-        rest.postForEntity("/api/auth/register",
-                Map.of("fullName","AdminBola","email","admin-objbola@test.com",
-                        "password","Password1!","role","ADMIN"), Object.class);
-        String adminToken = ((Map<?,?>) rest.postForEntity("/api/auth/login",
-                Map.of("email","admin-objbola@test.com","password","Password1!"),
-                Map.class).getBody()).get("token").toString();
+        String adminToken = registerAndLogin("admin-objbola@test.com", "ADMIN");
+        String libToken = registerAndLogin("lib-objbola@test.com", "LIBRARIAN");
 
-        // Register librarian
+        // Register student A (loan owner) — need raw id, so register directly
+        String studentAUniversityId = nextUniversityId();
+        registryRepository.save(UniversityRegistry.builder()
+                .universityId(studentAUniversityId).fullName("StudentA")
+                .role(Role.STUDENT).active(true).build());
         rest.postForEntity("/api/auth/register",
-                Map.of("fullName","LibBola","email","lib-objbola@test.com",
-                        "password","Password1!","role","LIBRARIAN"), Object.class);
-        String libToken = ((Map<?,?>) rest.postForEntity("/api/auth/login",
-                Map.of("email","lib-objbola@test.com","password","Password1!"),
-                Map.class).getBody()).get("token").toString();
-
-        // Register student A (loan owner)
-        rest.postForEntity("/api/auth/register",
-                Map.of("fullName","StudentA","email","obj-bola-a@test.com",
-                        "password","Password1!","role","STUDENT"), Object.class);
+                Map.of("fullName", "StudentA", "email", "obj-bola-a@test.com",
+                        "password", "Password1!", "role", "STUDENT",
+                        "universityId", studentAUniversityId),
+                Object.class);
 
         // Register student B (attacker)
         String tokenB = registerAndLogin("obj-bola-b@test.com");
