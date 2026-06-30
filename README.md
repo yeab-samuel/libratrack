@@ -1,5 +1,8 @@
 # LibraTrack
 
+![CI](https://github.com/yeab-samuel/libratrack/actions/workflows/ci.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-21-orange)
+
 **University Library Loan, Reservation & Fine Management System**
 
 LibraTrack is a full-stack library management platform built for a university setting with four distinct user roles — students, faculty, librarians, and administrators. It manages the complete lifecycle of a library transaction: catalogue search, self-service and counter-issued loans, a fairness-aware reservation queue, automatic fine calculation, book ratings, and administrative reporting — all secured behind JWT-based authentication with role-based access control.
