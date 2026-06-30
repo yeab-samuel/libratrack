@@ -38,7 +38,6 @@ The system was built as the capstone project for **SECT-4221 — Enterprise Appl
 | 1 | Yeabsira Samuel | ATE/9305/14 | yeabsamuelz25@gmail.com | [yeab-samuel](https://github.com/yeab-samuel) |
 | 2 | Kassahun Belachew | ATE/8400/14 | Etelethiopia@gmail.com | [Kase2228](https://github.com/Kase2228) |
 | 3 | Natnael Nigatu | ATE/7495/14 | natnaelnigatu23@gmail.com | [natiworks](https://github.com/natiworks) |
-| 4 | Tsegaab Alemu | ATE/8814/14 | tsegaabalemu147@gmail.com | [Tsegaab-ux](https://github.com/Tsegaab-ux) |
 
 ---
 
@@ -117,11 +116,11 @@ libratrack/
 │   ├── dto/
 │   │   ├── request/       # Inbound request bodies
 │   │   └── response/      # Outbound response DTOs
-│   ├── entity/            # JPA entities
-│   ├── enums/             # Role, status, and category enums
-│   ├── security/          # JWT filter, UserDetailsService, JwtUtils
-│   ├── exception/         # Custom exceptions + global handler
-│   └── scheduler/         # Scheduled jobs (overdue fines, reservation expiry)
+│   ├── entity/             # JPA entities
+│   ├── enums/              # Role, status, and category enums
+│   ├── security/           # JWT filter, UserDetailsService, JwtUtils
+│   ├── exception/          # Custom exceptions + global handler
+│   └── scheduler/          # Scheduled jobs (overdue fines, reservation expiry)
 ├── src/main/resources/
 │   └── db/migration/      # Flyway migrations (V1–V16)
 ├── src/test/java/com/libratrack/
