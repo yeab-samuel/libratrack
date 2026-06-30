@@ -1470,6 +1470,7 @@ function ReportsPage({ auth }) {
 function ResetPasswordModal({ user, token, onClose, onDone }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm]   = useState("");
+  const [reveal, setReveal]     = useState(false);
   const [loading, setLoading]   = useState(false);
   const [err, setErr]           = useState("");
 
@@ -1496,12 +1497,25 @@ function ResetPasswordModal({ user, token, onClose, onDone }) {
       <form onSubmit={submit}>
         <div className="field">
           <label>New password (min 8 chars)</label>
-          <input type="password" required minLength={8} autoFocus
-            value={password} onChange={e => setPassword(e.target.value)} />
+          <div style={{ position:"relative" }}>
+            <input type={reveal ? "text" : "password"} required minLength={8} autoFocus
+              value={password} onChange={e => setPassword(e.target.value)}
+              style={{ paddingRight:"2.6rem" }} />
+            <button type="button" onClick={() => setReveal(r => !r)}
+              title={reveal ? "Hide passwords" : "Show passwords"}
+              style={{
+                position:"absolute", right:".5rem", top:"50%", transform:"translateY(-50%)",
+                background:"none", border:"none", cursor:"pointer", color:"var(--muted)",
+                fontFamily:"'DM Mono',monospace", fontSize:".62rem", letterSpacing:".05em",
+                textTransform:"uppercase", padding:".2rem .3rem",
+              }}>
+              {reveal ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
         <div className="field">
           <label>Confirm new password</label>
-          <input type="password" required minLength={8}
+          <input type={reveal ? "text" : "password"} required minLength={8}
             value={confirm} onChange={e => setConfirm(e.target.value)} />
         </div>
         {err && <div className="msg msg-err">{err}</div>}
