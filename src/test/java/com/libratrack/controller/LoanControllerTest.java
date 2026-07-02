@@ -33,6 +33,15 @@ class LoanControllerTest extends BaseControllerTest {
     @Autowired ObjectMapper objectMapper;
     @MockBean LoanService loanService;
 
+    // Used by the extend-loan tests below. ExtendLoanRequest.newDueDate is
+    // annotated @Future, so this must always resolve relative to "today"
+    // rather than being a fixed hardcoded date — a fixed date silently
+    // becomes "in the past" and fails validation with 400 once enough
+    // time passes, regardless of the role/ownership behavior under test.
+    private static String futureDueDateJson() {
+        return "{\"newDueDate\":\"" + LocalDate.now().plusDays(7) + "\"}";
+    }
+
     // ── 1. getMyLoans_NotAuthenticated_Returns401 ────────────────────────────
     @Test
     void getMyLoans_NotAuthenticated_Returns401() throws Exception {
@@ -142,7 +151,7 @@ class LoanControllerTest extends BaseControllerTest {
         mockMvc.perform(patch("/api/loans/1/extend")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"newDueDate\":\"2026-07-01\"}"))
+                        .content(futureDueDateJson()))
                 .andExpect(status().isOk());
     }
 
@@ -153,7 +162,7 @@ class LoanControllerTest extends BaseControllerTest {
         mockMvc.perform(patch("/api/loans/1/extend")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"newDueDate\":\"2026-07-01\"}"))
+                        .content(futureDueDateJson()))
                 .andExpect(status().isForbidden());
     }
 
@@ -167,7 +176,7 @@ class LoanControllerTest extends BaseControllerTest {
         mockMvc.perform(patch("/api/loans/1/extend")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"newDueDate\":\"2026-07-01\"}"))
+                        .content(futureDueDateJson()))
                 .andExpect(status().isForbidden());
     }
 
@@ -181,7 +190,7 @@ class LoanControllerTest extends BaseControllerTest {
         mockMvc.perform(patch("/api/loans/1/extend")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"newDueDate\":\"2026-07-01\"}"))
+                        .content(futureDueDateJson()))
                 .andExpect(status().isBadRequest());
     }
 
