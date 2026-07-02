@@ -95,10 +95,15 @@ class NotificationServiceTest {
     }
 
     // ── sendOverdueFineNotice ─────────────────────────────────────────────
+    // NOTE: sendOverdueFineNotice now takes plain fields (not a User entity)
+    // so it's safe to call from an @Async thread — see NotificationService
+    // class-level javadoc for why. Tests pass the member's fields directly.
 
     @Test
     void sendOverdueFineNotice_MailDisabled_SendNotCalled() {
-        service.sendOverdueFineNotice(member, "Clean Code", new BigDecimal("3.50"));
+        service.sendOverdueFineNotice(
+                member.getFullName(), member.getEmail(), member.getUniversityId(),
+                "Clean Code", new BigDecimal("3.50"));
         verify(service, never()).send(any(), any(), any());
     }
 
@@ -108,7 +113,9 @@ class NotificationServiceTest {
         setField(service, "apiKey", "re_test");
         doNothing().when(service).send(any(), any(), any());
 
-        service.sendOverdueFineNotice(member, "Clean Code", new BigDecimal("3.50"));
+        service.sendOverdueFineNotice(
+                member.getFullName(), member.getEmail(), member.getUniversityId(),
+                "Clean Code", new BigDecimal("3.50"));
 
         verify(service).send(eq("member@test.com"), contains("Fine"), contains("3.50"));
     }

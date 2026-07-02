@@ -125,7 +125,8 @@ class OverdueFineSchedulerTest {
         assertEquals(0, saved.getAmount().compareTo(new BigDecimal("0.50")));
 
         verify(notificationService).sendOverdueFineNotice(
-                eq(member), eq("Clean Code"), eq(new BigDecimal("0.50")));
+                eq(member.getFullName()), eq(member.getEmail()), eq(member.getUniversityId()),
+                eq("Clean Code"), eq(new BigDecimal("0.50")));
     }
 
     @Test
@@ -152,7 +153,8 @@ class OverdueFineSchedulerTest {
         assertSame(existing, saved, "Should update the existing FineRecord, not create a new one");
         assertEquals(0, saved.getAmount().compareTo(new BigDecimal("1.50")));
         verify(notificationService).sendOverdueFineNotice(
-                eq(member), eq("Clean Code"), eq(new BigDecimal("1.50")));
+                eq(member.getFullName()), eq(member.getEmail()), eq(member.getUniversityId()),
+                eq("Clean Code"), eq(new BigDecimal("1.50")));
     }
 
     @Test
@@ -189,7 +191,7 @@ class OverdueFineSchedulerTest {
         verify(loanRepository, times(2)).save(any());
         verify(fineRepository, times(2)).save(any());
         verify(notificationService, times(2))
-                .sendOverdueFineNotice(any(), any(), any());
+                .sendOverdueFineNotice(any(), any(), any(), any(), any());
     }
 
     // ── calculateOverdueFines — Phase 2 (OVERDUE → silent recalculation) ────
