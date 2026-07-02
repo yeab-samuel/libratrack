@@ -19,6 +19,14 @@ import java.time.LocalDate;
  * Sends transactional email notifications via Resend HTTP API.
  * Falls back to log-only mode when MAIL_ENABLED=false or RESEND_API_KEY is not set.
  * All public methods are @Async — a slow or failed send never blocks the caller's request.
+ *
+ * IMPORTANT: async methods must only ever receive plain values (String, BigDecimal, etc.),
+ * never JPA-managed entities such as User/Book/Loan. By the time the async thread runs,
+ * the caller's transaction/Hibernate session is already closed, so touching a lazy proxy
+ * (e.g. calling user.getFullName()) from here throws
+ * "IllegalStateException: Illegal pop() with non-matching JdbcValuesSourceProcessingState"
+ * and kills the whole calling transaction. Resolve any needed fields in the caller,
+ * while still inside its transaction, and pass those resolved values in.
  */
 @Service
 @Slf4j
@@ -88,16 +96,22 @@ public class NotificationService {
         );
     }
 
-    /** Notify member that an overdue fine has been applied to their account. */
+    /**
+     * Notify member that an overdue fine has been applied to their account.
+     *
+     * Takes plain fields (not a User entity) so this method is safe to call
+     * asynchronously — see the class-level note for why.
+     */
     @Async
-    public void sendOverdueFineNotice(User member, String bookTitle, BigDecimal amount) {
+    public void sendOverdueFineNotice(String memberFullName, String memberEmail,
+                                      String universityId, String bookTitle, BigDecimal amount) {
         log.info("[NOTIFY] Overdue fine — {} ({}) — {} — ${}",
-                member.getFullName(), member.getEmail(), bookTitle, amount);
+                memberFullName, memberEmail, bookTitle, amount);
         if (!isEnabled()) {
-            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", member.getEmail());
+            log.info("[NOTIFY] Mail disabled / no API key — skipping send to {}", memberEmail);
             return;
         }
-        send(member.getEmail(),
+        send(memberEmail,
                 "LibraTrack — Overdue Fine: " + bookTitle,
                 String.format(
                         "Dear %s,\n\n" +
@@ -105,7 +119,7 @@ public class NotificationService {
                                 "Current fine: $%.2f\n\n" +
                                 "Please return the book and settle your fine at the library desk.\n\n" +
                                 "— LibraTrack Library System",
-                        member.getFullName(), bookTitle, amount
+                        memberFullName, bookTitle, amount
                 )
         );
     }

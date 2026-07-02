@@ -38,6 +38,13 @@ public class OverdueFineScheduler {
      * Without Phase 2, the query in Phase 1 only ever catches a loan once
      * (ACTIVE → OVERDUE), so the fine amount would freeze after the very first
      * night and never accrue again.
+     *
+     * NOTE: notificationService.sendOverdueFineNotice(...) is @Async, so it runs
+     * on a separate thread after this transaction may already have closed.
+     * We must resolve every field we need from `loan.getMember()` (a lazy proxy)
+     * right here, while still inside this transaction, and pass plain values in —
+     * never the entity itself. Passing the entity caused Hibernate session-state
+     * corruption that made the whole scheduler run fail with a 500.
      */
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
@@ -61,9 +68,19 @@ public class OverdueFineScheduler {
                     () -> fineRepository.save(FineRecord.builder()
                             .loan(loan).member(loan.getMember()).amount(amount).build())
             );
+
+            // Resolve everything we need from the member NOW, inside the transaction,
+            // so the async call below only ever touches plain values — never the
+            // lazy User proxy itself.
+            User member = loan.getMember();
+            String memberFullName = member.getFullName();
+            String memberEmail = member.getEmail();
+            String universityId = member.getUniversityId();
+            String bookTitle = loan.getBookCopy().getBook().getTitle();
+
             // One-time notification — sent only on the first night a loan goes overdue.
             notificationService.sendOverdueFineNotice(
-                    loan.getMember(), loan.getBookCopy().getBook().getTitle(), amount);
+                    memberFullName, memberEmail, universityId, bookTitle, amount);
         }
 
         // ── Phase 2: already-overdue — recalculate daily without re-notifying ─
