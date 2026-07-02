@@ -134,7 +134,9 @@ public class LoanService {
             fineRepository.save(FineRecord.builder()
                     .loan(loan).member(member).amount(amount).build());
 
-            notificationService.sendOverdueFineNotice(member, copy.getBook().getTitle(), amount);
+            notificationService.sendOverdueFineNotice(
+                    member.getFullName(), member.getEmail(), member.getUniversityId(),
+                    copy.getBook().getTitle(), amount);
             log.info("Counter loan issued already overdue: loan={} daysLate={} fine={}", loan.getId(), daysLate, amount);
         }
 
