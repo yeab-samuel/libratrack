@@ -9,6 +9,9 @@ LibraTrack is a full-stack library management platform built for a university se
 
 The system was built as the capstone project for **SECT-4221 — Enterprise Application Development**, Spring 2025/2026.
 
+> **Live demo:** [libratrack.up.railway.app](https://libratrack.up.railway.app) (primary) · [libratrack-ui.onrender.com](https://libratrack-ui.onrender.com) (backup, may take 30–60s to wake up)
+> **Recorded walkthrough:** [go.screenpal.com/watch/cO1vjUnUini](https://go.screenpal.com/watch/cO1vjUnUini)
+
 ---
 
 ## Table of Contents
@@ -258,6 +261,8 @@ Then open `target/site/jacoco/index.html` in a browser. The JaCoCo plugin runs a
 
 ## Deployment
 
+> If the primary link below is unresponsive (e.g. during a Railway infrastructure incident), please use the Render backup link or the recorded walkthrough — both linked at the top of this README and below.
+
 ### Primary deployment — Railway (no cold-start)
 
 | Component | URL |
@@ -280,6 +285,12 @@ Railway keeps the container running continuously — no cold-start delays.
 > **Note:** Render's free tier spins down after 15 minutes of inactivity. The first request after a cold start may take 30–60 seconds — this is expected behaviour, not a bug.
 
 Both deployments share the same PostgreSQL database (hosted on Render). The nightly overdue-fine scheduler is triggered daily via cron-job.org as a workaround for Render's sleep behaviour.
+
+### Recorded walkthrough
+
+A full recorded demo of the system in action is available here, in case a live grading session coincides with a deployment issue on either platform:
+
+**https://go.screenpal.com/watch/cO1vjUnUini**
 
 ### Demo credentials
 
