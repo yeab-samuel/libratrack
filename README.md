@@ -38,7 +38,7 @@ The system was built as the capstone project for **SECT-4221 — Enterprise Appl
 
 | # | Full Name | Student Number | Email | GitHub |
 |---|---|---|---|---|
-| 1 | Yeabsira Samuel | ATE/9305/14 | yeabsamuelz25@gmail.com | [yeab-samuel](https://github.com/yeab-samuel) |
+| 1 | Yeabsira Samuel(Leader) | ATE/9305/14 | yeabsamuelz25@gmail.com | [yeab-samuel](https://github.com/yeab-samuel) |
 | 2 | Kassahun Belachew | ATE/8400/14 | Etelethiopia@gmail.com | [Kase2228](https://github.com/Kase2228) |
 | 3 | Natnael Nigatu | ATE/7495/14 | natnaelnigatu23@gmail.com | [natiworks](https://github.com/natiworks) |
 
